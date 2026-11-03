@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Orbital Dynamics Lab — SPACE MISSION CONTROL</title>
+<!--
+  SPACE MISSION CONTROL — page wiring
+  -----------------------------------
+  This file:  orbital-lab.html       (active page, linked in the nav below)
+  Linked:     solar-system.html      (Solar System Explorer)
+              mission-planner.html   (Mission Planner)
+-->
+<style>
+:root{
+  --bg:#05070f;
+  --bg-1:#070c18;
+  --panel:rgba(9,14,26,.94);
+  --panel-2:#0b1222;
+  --line:rgba(120,170,220,.20);
+  --line-strong:rgba(125,195,235,.45);
+  --text:#e3edf9;
+  --muted:#9db1cb;
+  --accent:#22d3ee;
+  --accent-2:#60a5fa;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --radius:12px;
+  --shadow:0 12px 32px rgba(0,0,0,.4);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+:root[data-theme="light"]{
+  --bg:#eef2f9;
+  --bg-1:#ffffff;
+  --panel:#ffffff;
+  --panel-2:#f4f7fc;
+  --line:rgba(14,44,78,.16);
+  --line-strong:rgba(14,58,98,.4);
+  --text:#0c1a2b;
+  --muted:#41566f;
+  --accent:#0a7186;
+  --accent-2:#1d4ed8;
+  --ok:#0d6e4d;
+  --warn:#8a5a00;
+  --shadow:0 10px 26px rgba(16,32,60,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(56,120,220,.14), transparent 60%),
+    radial-gradient(900px 500px at 5% 0%, rgba(34,211,238,.08), transparent 60%),
+    linear-gradient(180deg,var(--bg-1),var(--bg) 320px);
+  background-color:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:.02em}
+p{margin:0}
+a{color:var(--accent-2)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-48px;z-index:60;background:var(--accent);color:#04121a;padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none;transition:.2s}
+.skip:focus{top:8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:10px 18px;
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{
+  width:26px;height:26px;border-radius:50%;flex:none;
+  background:conic-gradient(from 210deg,var(--accent),var(--accent-2),#f0b429,var(--accent));
+  box-shadow:0 0 12px rgba(34,211,238,.55);
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.15}
+.brand-text b{font-size:.86rem;letter-spacing:.14em;font-weight:800}
+.brand-text small{font-size:.68rem;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-left:6px}
+.navlink{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:40px;padding:0 12px;border-radius:9px;
+  color:var(--muted);text-decoration:none;font-size:.84rem;font-weight:600;
+  border:1px solid transparent;transition:.16s;
+}
+.navlink:hover{color:var(--text);border-color:var(--line)}
+.navlink.is-active{color:var(--text);background:rgba(34,211,238,.10);border-color:rgba(34,211,238,.5)}
+.navlink .tag{
+  font-size:.6rem;letter-spacing:.1em;padding:2px 5px;border-radius:4px;
+  border:1px solid var(--warn);color:var(--warn);font-weight:700;
+}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.status{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;
+  padding:8px 12px;border-radius:99px;border:1px solid var(--line-strong);
+  background:var(--panel-2);color:var(--text);
+}
+.status .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.status.is-paused .dot{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.status.is-live .dot{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+  min-height:42px;padding:0 .95rem;border-radius:9px;
+  border:1px solid var(--line-strong);
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  color:var(--text);font:inherit;font-size:.85rem;font-weight:650;letter-spacing:.02em;
+  cursor:pointer;transition:border-color .16s,color .16s,background .16s;
+}
+:root[data-theme="light"] .btn{background:linear-gradient(180deg,#fff,#f2f6fc)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{
+  background:linear-gradient(180deg,rgba(34,211,238,.26),rgba(34,211,238,.09));
+  border-color:rgba(34,211,238,.65);color:#d7fbff;
+}
+:root[data-theme="light"] .btn-primary{background:linear-gradient(180deg,#0a7186,#0c8ba4);color:#fff;border-color:#0a7186}
+.btn-primary:hover{color:#fff;border-color:var(--accent)}
+.btn-ghost{background:transparent}
+.btn .ico{font-size:.9em}
+.nav-toggle{display:none}
+
+/* ---------- layout ---------- */
+main{max-width:1500px;margin:0 auto;padding:18px 18px 40px}
+.panel{
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0)),var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+:root[data-theme="light"] .panel{background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.75)),var(--panel)}
+.panel-head{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.panel-head h2{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:750}
+.panel-badges{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.badge{
+  font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;
+  padding:5px 8px;border-radius:6px;border:1px solid var(--line-strong);color:var(--muted);
+}
+.badge.warn{border-color:rgba(251,191,36,.65);color:var(--warn)}
+.badge.accent{border-color:rgba(34,211,238,.6);color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{padding:22px 4px 16px}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.26em;color:var(--accent);text-transform:uppercase}
+.hero h1{
+  font-size:clamp(1.9rem,5.2vw,3.3rem);font-weight:850;letter-spacing:.06em;margin-top:8px;
+  background:linear-gradient(92deg,#fff 10%,var(--accent) 65%,var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+:root[data-theme="light"] .hero h1{background:linear-gradient(92deg,#0c1a2b 10%,#0a7186 70%);-webkit-background-clip:text;background-clip:text}
+.hero .lede{max-width:74ch;color:var(--muted);margin-top:10px;font-size:.96rem}
+.hero-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.chip{
+  display:flex;flex-direction:column;gap:3px;
+  min-width:200px;padding:10px 14px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel-2);
+}
+.chip .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.chip .v{font-family:var(--mono);font-size:.98rem;font-weight:650;color:var(--text)}
+.chip.chip-action{flex-direction:row;align-items:center;gap:12px;min-width:0}
+
+/* ---------- workspace ---------- */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+.canvas-wrap{position:relative;width:100%;aspect-ratio:16/9;min-height:320px;border-bottom:1px solid var(--line);overflow:hidden}
+#orbitCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:0 0 var(--radius) var(--radius)}
+.canvas-hint{
+  position:absolute;left:10px;bottom:10px;right:10px;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;
+  color:#cfe3f7;background:rgba(4,10,20,.72);border:1px solid rgba(140,190,235,.3);
+  padding:6px 9px;border-radius:7px;pointer-events:none;max-width:fit-content;
+}
+.canvas-note{
+  position:absolute;right:10px;top:10px;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:#ffd79a;
+  background:rgba(30,18,4,.7);border:1px solid rgba(251,191,36,.55);
+  padding:5px 8px;border-radius:6px;pointer-events:none;
+}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 14px}
+.legend-item{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);font-family:var(--mono);letter-spacing:.04em}
+.legend-swatch{width:12px;height:12px;flex:none;border:1px solid rgba(255,255,255,.45);border-radius:50%}
+.legend-swatch.line{height:0;border:none;border-top:2px solid var(--accent);border-radius:0;width:16px}
+.legend-swatch.diamond{border-radius:2px;transform:rotate(45deg);width:10px;height:10px;background:#7dd3fc}
+.legend-swatch.arrow{width:0;height:0;background:none;border-left:9px solid var(--accent);border-right:5px solid transparent;border-top:5px solid transparent;border-bottom:5px solid transparent;border-radius:0}
+
+/* ---------- side panels ---------- */
+.side{display:flex;flex-direction:column;gap:14px}
+.stats{padding:12px 14px 14px;display:grid;gap:8px}
+.stat-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2)}
+.stat-row .k{font-size:.74rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;flex:0 0 auto}
+.stat-row .v{font-family:var(--mono);font-size:.88rem;font-weight:700;text-align:right;min-width:0;word-break:break-word}
+.stat-row .v .sub{display:block;font-weight:400;font-size:.68rem;color:var(--muted);letter-spacing:.02em}
+.notes{padding:12px 14px 14px;color:var(--muted);font-size:.82rem;display:grid;gap:8px}
+.notes b{color:var(--text)}
+.notes .eq{font-family:var(--mono);font-size:.78rem;color:var(--accent);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;display:block;overflow-x:auto}
+
+/* ---------- controls ---------- */
+.controls{
+  margin-top:14px;padding:12px 14px;
+  display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;
+}
+.ctl{display:flex;align-items:center;gap:9px;font-size:.8rem;color:var(--muted);letter-spacing:.04em}
+.ctl output,.ctl .val{font-family:var(--mono);font-weight:700;color:var(--text);min-width:56px}
+input[type=range]{accent-color:var(--accent);width:180px;height:34px;cursor:pointer}
+.field input[type=range]{width:100%}
+input[type=checkbox]{accent-color:var(--accent);width:20px;height:20px;cursor:pointer}
+.switch{
+  display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 12px;
+  border:1px solid var(--line-strong);border-radius:9px;background:var(--panel-2);
+  font-size:.84rem;font-weight:600;cursor:pointer;color:var(--text);
+}
+.switch:hover{border-color:var(--accent)}
+select,input[type=search],input[type=number]{
+  font:inherit;font-size:.86rem;color:var(--text);
+  background:var(--panel-2);border:1px solid var(--line-strong);
+  border-radius:9px;min-height:42px;padding:0 10px;
+}
+select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ---------- lower grid ---------- */
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:7px;padding:14px}
+.field label,.field .lbl{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.field-row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.field-row .readout{font-family:var(--mono);font-size:.86rem;font-weight:700;color:var(--text)}
+.derived{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:0 14px 12px}
+.derived .cell{border:1px solid var(--line);border-radius:9px;background:var(--panel-2);padding:7px 9px}
+.derived .cell .k{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.derived .cell .v{font-family:var(--mono);font-size:.84rem;font-weight:700}
+.notice{
+  margin:0 14px 14px;padding:9px 11px;border-radius:9px;
+  border:1px solid rgba(34,211,238,.45);background:rgba(34,211,238,.08);
+  color:var(--text);font-size:.8rem;
+}
+:root[data-theme="light"] .notice{background:rgba(10,113,134,.07);border-color:rgba(10,113,134,.4)}
+.notice.warn{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08);color:var(--warn)}
+:root[data-theme="light"] .notice.warn{background:rgba(138,90,0,.07)}
+.notice b{color:inherit}
+.notice:empty{display:none}
+.cmp-controls{display:flex;gap:12px;flex-wrap:wrap;padding:14px 14px 6px}
+.cmp-controls .field{padding:0;flex:1 1 210px;min-width:180px}
+.cmp-controls select{width:100%}
+.cmp-table{padding:8px 14px 14px;display:grid;gap:14px}
+.cmp-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel-2)}
+.cmp-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cmp-head .lbl2{font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:750}
+.cmp-head .ratio{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--accent)}
+.cmp-line{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:9px;align-items:center;margin:6px 0}
+.cmp-tag{font-family:var(--mono);font-size:.66rem;font-weight:800;text-align:center;border:1px solid var(--line-strong);border-radius:5px;padding:2px 0;color:var(--muted)}
+.track{height:12px;border-radius:99px;background:rgba(125,175,220,.18);overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;border-radius:99px;transition:width .4s ease}
+.fill-a{background:linear-gradient(90deg,#22d3ee,#0ea5e9)}
+.fill-b{background:linear-gradient(90deg,#818cf8,#3b82f6)}
+.cmp-val{font-family:var(--mono);font-size:.78rem;font-weight:650;text-align:right;min-width:132px}
+.cmp-text{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--line);font-size:.78rem}
+.cmp-text .k{color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-size:.7rem}
+.cmp-text .v{font-family:var(--mono);font-weight:650;text-align:right}
+
+/* ---------- method / footer ---------- */
+.method{margin-top:14px;padding:16px 18px}
+.method h2{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:750;margin-bottom:10px}
+.method ul{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem;display:grid;gap:7px}
+.method li b,.method li strong{color:var(--text)}
+.method code{font-family:var(--mono);font-size:.8em;background:var(--panel-2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;color:var(--accent)}
+footer{padding:22px 4px 6px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);margin-top:18px}
+footer b{color:var(--text)}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);
+  max-width:min(92vw,620px);z-index:70;
+  background:var(--panel-2);color:var(--text);
+  border:1px solid var(--accent);border-radius:10px;
+  padding:12px 16px;font-size:.86rem;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:.25s;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1080px){
+  .workspace{grid-template-columns:1fr}
+  .lower{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .nav{
+    order:3;width:100%;margin-left:0;display:none;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px;
+  }
+  .nav.is-open{display:flex}
+  .nav-toggle{display:inline-flex}
+  .navlink{flex:1 1 auto;justify-content:center;min-height:44px}
+  .topbar-right{margin-left:auto}
+}
+@media (max-width:640px){
+  main{padding:12px 12px 32px}
+  .canvas-wrap{aspect-ratio:1/1;min-height:300px}
+  .btn{min-height:46px;padding:0 14px}
+  .chip{min-width:0;flex:1 1 100%}
+  input[type=range]{width:100%;height:44px}
+  .controls input[type=range]{flex:1 1 160px}
+  .controls{gap:10px}
+  .cmp-val{min-width:0}
+  .cmp-line{grid-template-columns:20px minmax(0,1fr)}
+  .cmp-val{grid-column:2;text-align:left}
+  .canvas-hint{font-size:.6rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#viz">Skip to the simulation</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="brand-text"><b>SPACE MISSION CONTROL</b><small>Orbital Dynamics Lab</small></span>
+  </div>
+
+  <button class="btn btn-ghost nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryNav">☰ Menu</button>
+
+  <nav class="nav" id="primaryNav" aria-label="Primary">
+    <a class="navlink" href="solar-system.html">Solar System Explorer</a>
+    <a class="navlink is-active" href="orbital-lab.html" aria-current="page">Orbital Dynamics Lab</a>
+    <a class="navlink" href="mission-planner.html">Mission Planner</a>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="status is-live" id="statusPill">
+      <span class="dot" aria-hidden="true"></span><span id="statusText">SIM ACTIVE</span>
+    </span>
+    <button class="btn btn-ghost" id="themeBtn" aria-pressed="false">◐ Theme: Dark</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= HERO ================= -->
+  <section class="hero" aria-labelledby="heroTitle">
+    <p class="eyebrow">Flight Dynamics Division · Ideal Two-Body Model</p>
+    <h1 id="heroTitle">ORBITAL DYNAMICS LAB</h1>
+    <p class="lede">Experiment with orbital parameters and discover the physics behind satellite motion.</p>
+    <div class="hero-meta">
+      <div class="chip"><span class="k">Mission elapsed (simulated)</span><span class="v" id="metValue">T+ 000d 00:00:00</span></div>
+      <div class="chip"><span class="k">Time scale (clearly not real time)</span><span class="v" id="scaleChip">×1.0 · 300 sim s per real s</span></div>
+      <div class="chip chip-action">
+        <span class="k">Simulation</span>
+        <button class="btn btn-primary" id="heroPlayBtn" aria-pressed="true">
+          <span class="ico" id="heroPlayIcon" aria-hidden="true">❚❚</span>
+          <span id="heroPlayLabel">Pause</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WORKSPACE ================= -->
+  <section class="workspace" id="viz" tabindex="-1" aria-label="Orbital simulation">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Orbital view — Earth-centred, prograde</h2>
+        <div class="panel-badges">
+          <span class="badge warn">SCHEMATIC — NOT TO SCALE</span>
+          <span class="badge accent">TWO-BODY · IDEALIZED</span>
+          <span class="badge" id="timeBadge">TIME COMPRESSED</span>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="orbitCanvas" tabindex="0"
+                aria-label="Orbital simulation: Earth at the centre, the satellite's trajectory, and an animated satellite. Use left and right arrow keys to step the orbital phase."
+                aria-describedby="canvasHelp"></canvas>
+        <p id="canvasHelp" class="sr-only">
+          The satellite moves along the displayed orbit. Left and right arrow keys step the orbital phase,
+          space plays or pauses, and the controls below change altitude and eccentricity.
+          The drawing is schematic: the Earth and satellite are not drawn to scale.
+        </p>
+        <span class="canvas-note">SCHEMATIC · NOT TO SCALE</span>
+        <span class="canvas-hint" id="canvasHint">Arrows on the path show the direction of motion · ←/→ step phase · Space = play/pause</span>
+      </div>
+      <div class="legend" aria-label="Figure legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#8fd0ff,#1d4ed8)"></span>EARTH</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#a5f3fc;border-radius:3px"></span>SATELLITE</span>
+        <span class="legend-item"><span class="legend-swatch line"></span>ORBIT PATH</span>
+        <span class="legend-item"><span class="legend-swatch arrow"></span>DIRECTION OF MOTION / VELOCITY</span>
+        <span class="legend-item"><span class="legend-swatch diamond"></span>PERIGEE &amp; APOGEE</span>
+      </div>
+    </div>
+
+    <aside class="side">
+      <!-- Telemetry dashboard -->
+      <section class="panel" aria-labelledby="telemHeading">
+        <div class="panel-head">
+          <h2 id="telemHeading">Telemetry</h2>
+          <div class="panel-badges"><span class="badge accent" id="tTypeBadge">CIRCULAR</span></div>
+        </div>
+        <div class="stats">
+          <div class="stat-row"><span class="k">Orbital altitude</span><span class="v"><span id="tAlt">400.0 km</span><span class="sub" id="tAltSub">above Earth's surface</span></span></div>
+          <div class="stat-row"><span class="k">Radius (Earth centre)</span><span class="v"><span id="tRad">6,771.0 km</span><span class="sub" id="tRadSub">R⊕ 6,371 km + altitude</span></span></div>
+          <div class="stat-row"><span class="k">Orbital velocity</span><span class="v"><span id="tVel">7.673 km/s</span><span class="sub" id="tVelSub">√(μ/a) circular</span></span></div>
+          <div class="stat-row"><span class="k">Orbital period</span><span class="v"><span id="tPeriod">92.4 min</span><span class="sub" id="tPeriodSub">5,545 s</span></span></div>
+          <div class="stat-row"><span class="k">Eccentricity</span><span class="v"><span id="tEcc">0.0000</span><span class="sub" id="tEccSub">circular (e = 0)</span></span></div>
+          <div class="stat-row"><span class="k">Perigee radius</span><span class="v"><span id="tPe">6,771.0 km</span><span class="sub" id="tPeSub">altitude 400.0 km</span></span></div>
+          <div class="stat-row"><span class="k">Apogee radius</span><span class="v"><span id="tRa">6,771.0 km</span><span class="sub" id="tRaSub">altitude 400.0 km</span></span></div>
+          <div class="stat-row"><span class="k">True anomaly ν</span><span class="v"><span id="tNu">0.0°</span><span class="sub" id="tNuSub">position from perigee</span></span></div>
+          <div class="stat-row"><span class="k">Classification</span><span class="v"><span id="tClass">Circular low Earth orbit (LEO)</span><span class="sub" id="tClassSub">two-body model</span></span></div>
+        </div>
+      </section>
+
+      <!-- Model notes -->
+      <section class="panel" aria-labelledby="notesHeading">
+        <div class="panel-head"><h2 id="notesHeading">Model equations</h2></div>
+        <div class="notes">
+          <span class="eq">a = R + h &nbsp;·&nbsp; R = 6,371 km</span>
+          <span class="eq">v(circular) = √(μ / a) &nbsp;·&nbsp; μ = 398600.4418 km³/s²</span>
+          <span class="eq">T = 2π √(a³ / μ) &nbsp;[seconds]</span>
+          <span class="eq">v(vis-viva) = √(μ (2/r − 1/a))</span>
+          <p><b>Altitude</b> is measured above the surface; <b>radius</b> is measured from Earth's centre. On a circular orbit they differ by exactly 6,371 km.</p>
+          <p>Elliptical motion is propagated by solving <b>Kepler's equation</b> (M = E − e·sin E), not by constant angular speed.</p>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <!-- ================= CONTROLS ================= -->
+  <section class="panel controls" role="group" aria-label="Simulation controls">
+    <button class="btn btn-primary" id="btnPlay" aria-pressed="true">
+      <span class="ico" id="playIcon" aria-hidden="true">❚❚</span><span id="playLabel">Pause</span>
+    </button>
+
+    <label class="ctl" for="speedRange">Simulation speed <output id="speedOut" for="speedRange">×1.0</output></label>
+    <input type="range" id="speedRange" min="0.2" max="50" step="0.2" value="1"
+           aria-label="Simulation speed multiplier, 0.2 to 50 times">
+
+    <label class="ctl" for="orbitType">Orbit reference</label>
+    <select id="orbitType" aria-label="Reference orbit type">
+      <option value="circular">Circular orbit (e = 0, 400 km)</option>
+      <option value="elliptical">Elliptical orbit (e = 0.60, 12,000 km)</option>
+      <option value="geostationary">Geostationary reference (35,786 km)</option>
+    </select>
+
+    <button class="btn" id="btnRestore">⟲ Restore reference</button>
+
+    <label class="switch" for="paramsToggle">
+      <input type="checkbox" id="paramsToggle" checked> Orbital parameters
+    </label>
+
+    <label class="switch" for="starToggle">
+      <input type="checkbox" id="starToggle" checked> Starfield
+    </label>
+
+    <button class="btn" id="btnUnits" aria-pressed="false">Distance: kilometres</button>
+
+    <button class="btn" id="btnReset">⟲ Reset simulation</button>
+  </section>
+
+  <!-- ================= LOWER ================= -->
+  <section class="lower">
+    <!-- Orbital parameters -->
+    <div class="panel" aria-labelledby="paramHeading">
+      <div class="panel-head">
+        <h2 id="paramHeading">Orbital parameters</h2>
+        <div class="panel-badges"><span class="badge" id="paramBadge">e ≤ 0.059 here</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label for="altRange">Orbital altitude (semimajor-axis altitude)</label>
+          <span class="readout" id="altOut">400 km</span>
+        </div>
+        <input type="range" id="altRange" min="160" max="40000" step="1" value="400"
+               aria-describedby="altHelp">
+        <p id="altHelp" style="font-size:.76rem;color:var(--muted)">
+          Sets a = R + h in kilometres. For a circular orbit this is the orbit's altitude above the
+          surface; for an elliptical orbit it is the reference semimajor-axis altitude.
+        </p>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label for="eccRange">Orbital eccentricity</label>
+          <span class="readout" id="eccOut">0.000</span>
+        </div>
+        <input type="range" id="eccRange" min="0" max="0.055" step="0.005" value="0"
+               aria-describedby="eccHelp">
+        <p id="eccHelp" style="font-size:.76rem;color:var(--muted)">
+          0 = circular. The maximum is limited so the perigee radius a(1 − e) always stays outside
+          Earth's surface (6,371 km).
+        </p>
+      </div>
+
+      <div class="derived">
+        <div class="cell"><span class="k">Semimajor axis a</span><span class="v" id="dA">6,771 km</span></div>
+        <div class="cell"><span class="k">Perigee altitude</span><span class="v" id="dRp">400 km</span></div>
+        <div class="cell"><span class="k">Apogee altitude</span><span class="v" id="dRa">400 km</span></div>
+        <div class="cell"><span class="k">Eccentricity limit</span><span class="v" id="dEmax">0.059</span></div>
+      </div>
+
+      <p class="notice" id="paramNotice"></p>
+    </div>
+
+    <!-- Comparison panel -->
+    <div class="panel" aria-labelledby="cmpHeading">
+      <div class="panel-head">
+        <h2 id="cmpHeading">Comparison — two orbital configurations</h2>
+        <div class="panel-badges"><span class="badge accent">A / B</span></div>
+      </div>
+      <div class="cmp-controls">
+        <div class="field">
+          <label for="cmpA">Configuration A</label>
+          <select id="cmpA">
+            <option value="current">Current configuration (live)</option>
+            <option value="leo">LEO — 400 km circular</option>
+            <option value="meo">GPS-type MEO — 20,200 km circular</option>
+            <option value="geo">Geostationary — 35,786 km circular</option>
+            <option value="molniya">Molniya-type — e 0.74, a 26,600 km</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cmpB">Configuration B</label>
+          <select id="cmpB">
+            <option value="current">Current configuration (live)</option>
+            <option value="leo">LEO — 400 km circular</option>
+            <option value="meo">GPS-type MEO — 20,200 km circular</option>
+            <option value="geo" selected>Geostationary — 35,786 km circular</option>
+            <option value="molniya">Molniya-type — e 0.74, a 26,600 km</option>
+          </select>
+        </div>
+      </div>
+      <div class="cmp-table" id="cmpTable"></div>
+    </div>
+  </section>
+
+  <!-- ================= METHOD ================= -->
+  <section class="panel method" aria-labelledby="methodHeading">
+    <h2 id="methodHeading">Method, validation &amp; assumptions</h2>
+    <ul>
+      <li><b>Constants:</b> gravitational parameter <code>μ = 398600.4418 km³/s²</code>, mean Earth radius <code>R = 6371 km</code>. All internal arithmetic uses <b>kilometres and seconds</b>; period is stored in seconds and shown in minutes/hours; distances can be displayed in kilometres or miles (1 mi = 1.609344 km).</li>
+      <li><b>Circular orbit:</b> <code>a = R + h</code>, <code>v = √(μ/a)</code>, <code>T = 2π√(a³/μ)</code>, eccentricity exactly <b>0</b>. Altitude and radius are constant and differ by R.</li>
+      <li><b>Elliptical orbit:</b> shape from <code>a</code> and <code>e</code>: perigee <code>r_p = a(1 − e)</code>, apogee <code>r_a = a(1 + e)</code>. Speed uses the <b>vis-viva</b> equation at the satellite's current radius — the circular formula is never applied at arbitrary positions. Position comes from Kepler's equation solved by Newton–Raphson, so the satellite speeds up at perigee and slows at apogee exactly as real orbital motion does.</li>
+      <li><b>No Earth intersection:</b> eccentricity is capped at <code>e_max = 1 − R/a</code>, so perigee radius is always ≥ 6,371 km. If you raise eccentricity or lower altitude, the limit is applied automatically and explained in the parameters panel — the app never shows NaN, Infinity or an orbit through the Earth.</li>
+      <li><b>Geostationary reference</b> uses h ≈ 35,786 km, circular, equatorial, prograde. Its model period is <span id="geoPeriodCalc">≈ 86,141 s</span> — within 0.03% of one sidereal day (86,164.1 s), so it reads as <b>≈ 23.93 h</b>. The published 35,786 km figure is referenced to Earth's <em>equatorial</em> radius (6,378 km); with this model's mean radius (6,371 km) an exact sidereal-day period corresponds to ≈ 35,793 km. <b>This is an idealization:</b> a real geostationary orbit also experiences lunisolar perturbations, solar radiation pressure and J₂ oblateness, and requires station-keeping.</li>
+      <li><b>Model limits:</b> ideal two-body dynamics only — no atmospheric drag, no Earth oblateness (J₂), no third-body perturbations (Sun/Moon), no thrust, no inclination (the orbit is drawn in the equatorial plane). These effects are deliberately ignored so the altitude–period–velocity–eccentricity relationships stay clear.</li>
+      <li><b>Time scaling:</b> the animation is compressed — at ×1.0 the simulation advances <b>300 simulated seconds per real second</b> (shown in the header). The MET readout is <em>simulated</em> elapsed time, not a real clock, and the motion shown is not real-time.</li>
+      <li><b>Page wiring:</b> this file is <code>orbital-lab.html</code>; <em>Solar System Explorer</em> links to <code>solar-system.html</code>; <em>Mission Planner</em> links to <code>mission-planner.html</code>. All three pages are self-contained and cross-linked.</li>
+    </ul>
+    <footer>
+      <b>SPACE MISSION CONTROL</b> · Orbital Dynamics Lab — standalone HTML/CSS/JS, no build step, no network access.
+      Equations and constants are standard two-body orbital mechanics; the drawing itself is schematic and not to scale.
+    </footer>
+  </section>
+</main>
+
+<div id="toast" aria-hidden="true"></div>
+<p class="sr-only" id="announce" aria-live="polite"></p>
+<noscript><p style="padding:20px">This simulation requires JavaScript to run.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     CONSTANTS — standard two-body values
+     ========================================================= */
+  var MU = 398600.4418;          /* km^3 / s^2  */
+  var RE = 6371;                 /* Earth mean radius, km */
+  var TAU = Math.PI * 2;
+  var KM_PER_MI = 1.609344;
+  var SIDEREAL_DAY_S = 86164.0905;
+  var SIM_SECONDS_PER_REAL_SECOND = 300;  /* time compression at x1.0 */
+  var ECC_STEP = 0.005;
+  var H_MIN = 160, H_MAX = 40000;
+
+  var TYPE_PRESETS = {
+    circular:      { h: 400,    e: 0 },
+    elliptical:    { h: 12000,  e: 0.6 },
+    geostationary: { h: 35786,  e: 0 }
+  };
+
+  var COMPARE_PRESETS = {
+    leo:     { h: 400,    e: 0,    label: 'LEO 400 km' },
+    meo:     { h: 20200,  e: 0,    label: 'GPS-type MEO' },
+    geo:     { h: 35786,  e: 0,    label: 'Geostationary' },
+    molniya: { h: 20229,  e: 0.74, label: 'Molniya-type' }
+  };
+
+  /* =========================================================
+     STATE
+     ========================================================= */
+  var state = {
+    playing: true,
+    speed: 1,          /* multiplier on the time compression */
+    h: 400,            /* semimajor-axis altitude, km */
+    e: 0,              /* eccentricity (always within eMax) */
+    units: 'km',       /* 'km' | 'mi' */
+    showParams: true,
+    starfield: true,
+    M: 0,              /* mean anomaly, rad */
+    simSeconds: 0      /* simulated elapsed seconds */
+  };
+
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  function safeNum(v, fallback) { return (typeof v === 'number' && isFinite(v)) ? v : fallback; }
+
+  /* =========================================================
+     PHYSICS
+     ========================================================= */
+  function eMaxFor(a) { return Math.max(0, 1 - RE / a); }
+
+  /* Derive a validated configuration from state. Never returns NaN. */
+  function derive() {
+    var h = clamp(safeNum(state.h, 400), H_MIN, H_MAX);
+    var a = RE + h;                       /* km */
+    var em = eMaxFor(a);
+    var e = clamp(safeNum(state.e, 0), 0, em);
+    /* belt-and-braces: perigee must stay outside Earth */
+    if (a * (1 - e) <= RE) e = clamp(em - ECC_STEP, 0, em);
+    var rp = a * (1 - e);                 /* perigee radius, km */
+    var ra = a * (1 + e);                 /* apogee radius, km */
+    var p = a * (1 - e * e);              /* semi-latus rectum, km */
+    var T = TAU * Math.sqrt(a * a * a / MU);  /* period, seconds */
+    return {
+      h: h, a: a, e: e, emax: em,
+      rp: rp, ra: ra, p: p, T: T,
+      vCirc: Math.sqrt(MU / a)           /* circular speed at a, km/s */
+    };
+  }
+
+  function periodSeconds(a) { return TAU * Math.sqrt(a * a * a / MU); }
+  function circularSpeed(a) { return Math.sqrt(MU / a); }
+  function visViva(r, a) {
+    var arg = MU * (2 / r - 1 / a);
+    return Math.sqrt(arg > 0 ? arg : 0);
+  }
+
+  /* Solve Kepler's equation M = E - e sin E for the eccentric anomaly. */
+  function solveKepler(M, e) {
+    M = ((M % TAU) + TAU) % TAU;
+    if (e < 1e-8) return M;
+    var E = e < 0.8 ? M : Math.PI;
+    for (var i = 0; i < 60; i++) {
+      var denom = 1 - e * Math.cos(E);
+      if (denom === 0) break;
+      var delta = (E - e * Math.sin(E) - M) / denom;
+      E -= delta;
+      if (Math.abs(delta) < 1e-12) break;
+    }
+    return E;
+  }
+
+  function trueAnomaly(E, e) {
+    return 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2),
+                          Math.sqrt(1 - e) * Math.cos(E / 2));
+  }
+
+  /* Full satellite state for the current mean anomaly. */
+  function satState(d) {
+    var E = solveKepler(state.M, d.e);
+    var nu = trueAnomaly(E, d.e);
+    var r = d.a * (1 - d.e * Math.cos(E));
+    if (!(r > RE)) r = Math.max(d.rp, RE * 1.0001);      /* defensive */
+    var v = visViva(r, d.a);
+    /* velocity components in the polar frame -> direction of motion */
+    var k = Math.sqrt(MU / d.p);
+    var vr = k * d.e * Math.sin(nu);
+    var vt = k * (1 + d.e * Math.cos(nu));
+    var heading = nu + Math.atan2(vt, vr);
+    return { nu: nu, r: r, alt: r - RE, v: v, heading: heading, rev: state.M / TAU };
+  }
+
+  function advance(dtReal) {
+    var sim = dtReal * state.speed * SIM_SECONDS_PER_REAL_SECOND;
+    state.simSeconds += sim;
+    var cfg = derive();
+    state.M += (TAU / cfg.T) * sim;
+    if (state.M > TAU * 1000) state.M = state.M % TAU;
+  }
+
+  function currentType() {
+    if (state.e > 0) return 'elliptical';
+    if (Math.abs(state.h - 35786) <= 250) return 'geostationary';
+    return 'circular';
+  }
+
+  function classification(d) {
+    if (d.e > 0) {
+      var apAlt = d.ra - RE;
+      if (apAlt < 2000) return 'Elliptical low Earth orbit';
+      return 'Elliptical high-energy orbit (HEO-type)';
+    }
+    if (d.h < 2000) return 'Circular low Earth orbit (LEO)';
+    if (d.h < 34000) return 'Circular medium Earth orbit (MEO)';
+    if (d.h <= 38000) return 'Geostationary-altitude circular orbit';
+    return 'Circular high Earth orbit';
+  }
+
+  /* =========================================================
+     DOM
+     ========================================================= */
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $('orbitCanvas');
+  var ctx = canvas.getContext('2d');
+  var toastEl = $('toast');
+  var announceEl = $('announce');
+  var cmpTable = $('cmpTable');
+
+  /* =========================================================
+     HELPERS
+     ========================================================= */
+  function fmt(n, dp) {
+    dp = (dp === undefined) ? 0 : dp;
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  }
+  function toDisplay(km) { return state.units === 'mi' ? km / KM_PER_MI : km; }
+  function unitLabel() { return state.units === 'mi' ? 'mi' : 'km'; }
+  /* distance in current display units */
+  function d(km, dp) { dp = (dp === undefined) ? 1 : dp; return fmt(toDisplay(km), dp) + ' ' + unitLabel(); }
+  function dNum(km, dp) { dp = (dp === undefined) ? 1 : dp; return fmt(toDisplay(km), dp); }
+  /* speed displayed as km/s (always) plus per-hour in current units */
+  function speedPerHour(kmh) {
+    var v = state.units === 'mi' ? kmh / KM_PER_MI : kmh;
+    return fmt(v, 0) + ' ' + unitLabel() + '/h';
+  }
+  function minHours(sec) {
+    var mins = sec / 60, hours = sec / 3600;
+    if (hours >= 1) return fmt(hours, 2) + ' h (' + fmt(mins, 1) + ' min)';
+    return fmt(mins, 1) + ' min (' + fmt(sec, 0) + ' s)';
+  }
+  function rr(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  var toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 5200);
+  }
+  function announce(msg) { announceEl.textContent = msg; }
+
+  /* =========================================================
+     CANVAS GEOMETRY
+     ========================================================= */
+  var W = 1, H = 1, DPR = 1, cx = 0, cy = 0;
+  var bgCanvas = document.createElement('canvas');
+  var bgCtx = bgCanvas.getContext('2d');
+  var bgValid = false;
+
+  var stars = (function () {
+    var seed = 8675309;
+    function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+    var out = [];
+    for (var i = 0; i < 220; i++) {
+      out.push({ x: rnd(), y: rnd(), r: 0.3 + rnd() * 1.4, a: 0.2 + rnd() * 0.6, hue: rnd() });
+    }
+    return out;
+  })();
+
+  function layout() {
+    var rect = canvas.getBoundingClientRect();
+    W = Math.max(1, rect.width);
+    H = Math.max(1, rect.height);
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+    buildBackground();
+    invalidate();
+  }
+
+  /* static background baked once per resize, then blitted each frame */
+  function buildBackground() {
+    bgCanvas.width = Math.max(1, Math.round(W * DPR));
+    bgCanvas.height = Math.max(1, Math.round(H * DPR));
+    bgCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    bgCtx.fillStyle = '#04060d';
+    bgCtx.fillRect(0, 0, W, H);
+    var g = bgCtx.createRadialGradient(W * 0.8, H * 0.15, 0, W * 0.8, H * 0.15, Math.max(W, H) * 0.7);
+    g.addColorStop(0, 'rgba(30,66,124,0.36)');
+    g.addColorStop(1, 'rgba(30,66,124,0)');
+    bgCtx.fillStyle = g;
+    bgCtx.fillRect(0, 0, W, H);
+    g = bgCtx.createRadialGradient(W * 0.1, H * 0.9, 0, W * 0.1, H * 0.9, Math.max(W, H) * 0.5);
+    g.addColorStop(0, 'rgba(18,104,116,0.18)');
+    g.addColorStop(1, 'rgba(18,104,116,0)');
+    bgCtx.fillStyle = g;
+    bgCtx.fillRect(0, 0, W, H);
+    bgValid = true;
+  }
+
+  /* pixels per kilometre so the widest point of the orbit fits the view */
+  function scaleFor(d) {
+    var rFit = Math.max(d.ra, d.a) * 1.08;
+    var avail = Math.min(W, H) / 2 - 34;
+    return Math.max(0.00001, avail / rFit);
+  }
+  function earthDrawRadius() {
+    return Math.max(13, Math.min(48, Math.min(W, H) * 0.085));
+  }
+
+  function radiusAt(phi, d) { return d.p / (1 + d.e * Math.cos(phi)); }
+
+  /* =========================================================
+     DRAWING
+     ========================================================= */
+  function drawTag(text, x, y, accent) {
+    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    var w = ctx.measureText(text).width + 12, h = 16;
+    var lx = Math.max(3, Math.min(W - w - 3, x - w / 2));
+    var ly = Math.max(3, Math.min(H - h - 3, y - h / 2));
+    rr(lx, ly, w, h, 4);
+    ctx.fillStyle = 'rgba(5,12,22,0.88)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = accent ? 'rgba(34,211,238,0.85)' : 'rgba(120,160,200,0.45)';
+    ctx.stroke();
+    ctx.fillStyle = accent ? '#a5f3fc' : '#cfe3f7';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, lx + w / 2, ly + h / 2 + 0.5);
+  }
+
+  function drawLabel(text, x, y, accent, below) {
+    ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    var w = ctx.measureText(text).width + 14, h = 19;
+    var lx = Math.max(4, Math.min(W - w - 4, x - w / 2));
+    var ly = below ? (y + 6) : (y - h - 6);
+    if (ly < 4) ly = y + 6;
+    if (ly + h > H - 4) ly = Math.max(4, y - h - 6);
+    rr(lx, ly, w, h, 5);
+    ctx.fillStyle = accent ? 'rgba(8,20,34,0.95)' : 'rgba(5,12,22,0.82)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = accent ? 'rgba(34,211,238,0.95)' : 'rgba(125,170,215,0.45)';
+    ctx.stroke();
+    ctx.fillStyle = accent ? '#b6f5ff' : '#cfe3f7';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, lx + w / 2, ly + h / 2 + 0.5);
+  }
+
+  function drawChevron(phi, d, s) {
+    var r1 = radiusAt(phi, d);
+    var r2 = radiusAt(phi + 0.02, d);
+    var x1 = cx + r1 * Math.cos(phi) * s;
+    var y1 = cy - r1 * Math.sin(phi) * s;
+    var x2 = cx + r2 * Math.cos(phi + 0.02) * s;
+    var y2 = cy - r2 * Math.sin(phi + 0.02) * s;
+    var ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.moveTo(-5, -5.5);
+    ctx.lineTo(5, 0);
+    ctx.lineTo(-5, 5.5);
+    ctx.strokeStyle = 'rgba(165,245,252,0.95)';
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawOrbitPath(d, s) {
+    var N = 200;
+    ctx.beginPath();
+    for (var i = 0; i <= N; i++) {
+      var phi = (i / N) * TAU;
+      var r = radiusAt(phi, d);
+      var x = cx + r * Math.cos(phi) * s;
+      var y = cy - r * Math.sin(phi) * s;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(34,211,238,0.85)';
+    ctx.stroke();
+
+    /* faint inner echo for depth */
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(96,165,250,0.25)';
+    ctx.stroke();
+  }
+
+  function drawEarth(er) {
+    var g = ctx.createRadialGradient(cx - er * 0.35, cy - er * 0.35, er * 0.15, cx, cy, er);
+    g.addColorStop(0, '#a8dcff');
+    g.addColorStop(0.45, '#3f7fd8');
+    g.addColorStop(1, '#0c2352');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, er, 0, TAU);
+    ctx.fill();
+
+    /* simple land hint, clipped */
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, er, 0, TAU);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(56,168,110,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(cx - er * 0.25, cy - er * 0.1, er * 0.38, er * 0.26, 0.4, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + er * 0.3, cy + er * 0.25, er * 0.3, er * 0.2, -0.5, 0, TAU);
+    ctx.fill();
+    /* terminator */
+    var t = ctx.createLinearGradient(cx + er, cy, cx - er, cy);
+    t.addColorStop(0, 'rgba(0,0,0,0)');
+    t.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = t;
+    ctx.fillRect(cx - er, cy - er, er * 2, er * 2);
+    ctx.restore();
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(148,210,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, er, 0, TAU);
+    ctx.stroke();
+  }
+
+  function renderScene() {
+    if (bgValid) ctx.drawImage(bgCanvas, 0, 0, W, H);
+    else { ctx.fillStyle = '#04060d'; ctx.fillRect(0, 0, W, H); }
+
+    if (state.starfield) {
+      for (var i = 0; i < stars.length; i++) {
+        var st = stars[i];
+        ctx.globalAlpha = st.a;
+        ctx.fillStyle = st.hue > 0.85 ? '#cfe6ff' : (st.hue < 0.1 ? '#ffe7c4' : '#ffffff');
+        ctx.beginPath();
+        ctx.arc(st.x * W, st.y * H, st.r, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    var cfg = derive();
+    var s = scaleFor(cfg);
+    var sat = satState(cfg);
+    var er = earthDrawRadius();
+
+    /* 1 — trajectory */
+    drawOrbitPath(cfg, s);
+
+    /* 2 — direction-of-motion markers on the path */
+    drawChevron(1.05, cfg, s);
+    drawChevron(1.05 + Math.PI, cfg, s);
+
+    /* 3 — parameter annotations */
+    if (state.showParams) {
+      /* semi-major axis line */
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(96,165,250,0.75)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + cfg.a * s, cy);
+      ctx.stroke();
+      ctx.restore();
+      drawTag('a = ' + d(cfg.a, 0), cx + cfg.a * s * 0.55, cy - 12, false);
+
+      /* perigee / apogee markers */
+      var px = cx + cfg.rp * s, ax = cx - cfg.ra * s;
+      ctx.fillStyle = '#7dd3fc';
+      ctx.save();
+      ctx.translate(px, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.restore();
+      drawTag('PERIGEE ' + d(cfg.rp, 0), px, cy + 22, true);
+      ctx.save();
+      ctx.translate(ax, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.restore();
+      drawTag('APOGEE ' + d(cfg.ra, 0), ax, cy - 22, true);
+
+      /* true-anomaly arc around Earth */
+      var arcR = er + 13;
+      ctx.save();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = 'rgba(251,191,36,0.9)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, arcR, 0, -sat.nu, false);
+      ctx.stroke();
+      ctx.restore();
+      var nuDeg = ((sat.nu * 180 / Math.PI) + 360) % 360;
+      drawTag('ν = ' + fmt(nuDeg, 1) + '°', cx + (arcR + 30) * Math.cos(-sat.nu), cy + (arcR + 30) * Math.sin(-sat.nu), false);
+    }
+
+    /* 4 — Earth */
+    drawEarth(er);
+    drawLabel('EARTH · R = ' + d(RE, 0), cx, cy + er, false, true);
+
+    /* 5 — radius line to the satellite */
+    var sx = cx + sat.r * Math.cos(sat.nu) * s;
+    var sy = cy - sat.r * Math.sin(sat.nu) * s;
+    if (state.showParams) {
+      ctx.save();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(34,211,238,0.8)';
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      ctx.restore();
+      drawTag('r = ' + d(sat.r, 0), cx + (sx - cx) * 0.6, cy + (sy - cy) * 0.6, true);
+    }
+
+    /* 6 — satellite with velocity vector */
+    var headScreen = Math.atan2(-Math.sin(sat.heading), Math.cos(sat.heading));
+    var arrowLen = clamp(28 * (sat.v / cfg.vCirc), 14, 58);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(headScreen);
+    var ag = ctx.createLinearGradient(arrowLen, 0, 0, 0);
+    ag.addColorStop(0, 'rgba(34,211,238,0.2)');
+    ag.addColorStop(1, 'rgba(34,211,238,0.95)');
+    ctx.strokeStyle = ag;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(arrowLen, 0);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(arrowLen + 6, 0);
+    ctx.lineTo(arrowLen - 3, -5);
+    ctx.lineTo(arrowLen - 3, 5);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(34,211,238,0.95)';
+    ctx.fill();
+    ctx.restore();
+
+    if (state.showParams) {
+      var ax2 = sx + Math.cos(headScreen) * (arrowLen + 26);
+      var ay2 = sy + Math.sin(headScreen) * (arrowLen + 26);
+      drawTag('v = ' + fmt(sat.v, 3) + ' km/s', ax2, ay2, true);
+    }
+
+    /* satellite body */
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(headScreen);
+    var halo = ctx.createRadialGradient(0, 0, 2, 0, 0, 16);
+    halo.addColorStop(0, 'rgba(165,245,252,0.5)');
+    halo.addColorStop(1, 'rgba(165,245,252,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillRect(-13, -3, 7, 6);
+    ctx.fillRect(6, -3, 7, 6);
+    ctx.fillStyle = '#e6fbff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(34,211,238,0.95)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* =========================================================
+     TELEMETRY
+     ========================================================= */
+  function renderTelemetry() {
+    var dcfg = derive();
+    var sat = satState(dcfg);
+    var circular = dcfg.e === 0;
+    var type = currentType();
+    var geoOn = type === 'geostationary';
+
+    $('tTypeBadge').textContent = geoOn ? 'GEO REFERENCE'
+      : (circular ? 'CIRCULAR' : 'ELLIPTICAL');
+
+    $('tAlt').textContent = d(sat.alt, 1);
+    $('tAltSub').textContent = circular
+      ? 'constant — above the surface'
+      : 'current — perigee ' + d(dcfg.rp - RE, 0) + ' · apogee ' + d(dcfg.ra - RE, 0);
+
+    $('tRad').textContent = d(sat.r, 1);
+    $('tRadSub').textContent = 'R⊕ ' + d(RE, 0) + ' + altitude (from Earth\u2019s centre)';
+
+    $('tVel').textContent = fmt(sat.v, 3) + ' km/s';
+    $('tVelSub').textContent = speedPerHour(sat.v * 3600) + ' · ' +
+      (circular ? '√(μ/a)' : 'vis-viva at current r');
+
+    $('tPeriod').textContent = minHours(dcfg.T);
+    var geoS = Math.abs(dcfg.T - SIDEREAL_DAY_S) / SIDEREAL_DAY_S < 0.01 && circular;
+    $('tPeriodSub').textContent = fmt(dcfg.T, 0) + ' s' +
+      (geoS ? ' · ≈ one sidereal day (86,164 s)' : '');
+
+    $('tEcc').textContent = fmt(dcfg.e, 4);
+    $('tEccSub').textContent = circular
+      ? 'circular (e = 0)'
+      : 'elliptical · limit here ≤ ' + fmt(dcfg.emax, 3);
+
+    $('tPe').textContent = d(dcfg.rp, 1);
+    $('tPeSub').textContent = 'altitude ' + d(dcfg.rp - RE, 1);
+    $('tRa').textContent = d(dcfg.ra, 1);
+    $('tRaSub').textContent = 'altitude ' + d(dcfg.ra - RE, 1);
+
+    var nuDeg = ((sat.nu * 180 / Math.PI) + 360) % 360;
+    $('tNu').textContent = fmt(nuDeg, 1) + '°';
+    $('tNuSub').textContent = fmt(sat.rev, 2) + ' orbits elapsed (simulated)';
+
+    $('tClass').textContent = classification(dcfg);
+    $('tClassSub').textContent = geoOn
+      ? 'circular, equatorial, prograde — idealized'
+      : (circular ? 'two-body, e = 0' : 'two-body, e > 0');
+  }
+
+  function updateClocks() {
+    var total = state.simSeconds;
+    if (!isFinite(total) || total < 0) total = 0;
+    var days = Math.floor(total / 86400);
+    var rem = total - days * 86400;
+    var hh = Math.floor(rem / 3600);
+    var mm = Math.floor((rem - hh * 3600) / 60);
+    var ss = Math.floor(rem - hh * 3600 - mm * 60);
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    $('metValue').textContent = 'T+ ' + String(days).padStart(3, '0') + 'd ' + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+    var scale = SIM_SECONDS_PER_REAL_SECOND * state.speed;
+    $('scaleChip').textContent = '×' + state.speed.toFixed(1) + ' · ' + fmt(scale, 0) + ' sim s per real s';
+  }
+
+  /* =========================================================
+     DERIVED READOUTS + VALIDITY NOTICE
+     ========================================================= */
+  function renderDerived() {
+    var dcfg = derive();
+    var type = currentType();
+
+    $('dA').textContent = d(dcfg.a, 0);
+    $('dRp').textContent = d(dcfg.rp - RE, 1);
+    $('dRa').textContent = d(dcfg.ra - RE, 1);
+    $('dEmax').textContent = fmt(dcfg.emax, 3);
+    $('paramBadge').textContent = 'e ≤ ' + fmt(dcfg.emax, 3) + ' here';
+
+    $('altOut').textContent = dNum(state.h, 0) + ' ' + unitLabel();
+    $('eccOut').textContent = fmt(state.e, 3);
+
+    /* keep the eccentricity slider's ceiling valid for this altitude */
+    var eMaxSlider = Math.floor(dcfg.emax / ECC_STEP) * ECC_STEP;
+    if (eMaxSlider < 0) eMaxSlider = 0;
+    $('eccRange').max = String(Math.round(eMaxSlider * 1000) / 1000);
+
+    /* contextual, helpful explanation — never NaN or silent failure */
+    var el = $('paramNotice');
+    if (state._clampMsg) {
+      el.className = 'notice warn';
+      el.innerHTML = state._clampMsg;
+    } else if (type === 'geostationary') {
+      el.className = 'notice';
+      el.innerHTML = '<b>Geostationary reference.</b> Circular, equatorial and prograde at h ≈ 35,786 km. ' +
+        'This two-body model gives a period of ' + fmt(dcfg.T, 0) + ' s ≈ ' + fmt(dcfg.T / 3600, 2) +
+        ' h — within 0.03% of one sidereal day (86,164.1 s). A real geostationary satellite also needs ' +
+        'station-keeping for J₂, lunisolar and radiation-pressure perturbations, which this idealized model ignores.';
+    } else if (dcfg.e > 0) {
+      el.className = 'notice';
+      el.innerHTML = '<b>Elliptical orbit.</b> Radius varies from ' + d(dcfg.rp, 0) + ' (perigee) to ' +
+        d(dcfg.ra, 0) + ' (apogee); speed follows vis-viva, so the satellite is fastest at perigee. ' +
+        'Perigee stays outside Earth because e ≤ ' + fmt(dcfg.emax, 3) + ' at this altitude.';
+    } else {
+      el.className = 'notice';
+      el.innerHTML = '<b>Circular orbit.</b> e = 0, so altitude and radius are constant: ' +
+        'v = √(μ/a) = ' + fmt(Math.sqrt(MU / dcfg.a), 3) + ' km/s and T = 2π√(a³/μ) = ' + fmt(dcfg.T, 0) +
+        ' s. Raise eccentricity to shape an ellipse.';
+    }
+  }
+
+  /* =========================================================
+     COMPARISON
+     ========================================================= */
+  function configFrom(h, e) {
+    var a = RE + h;
+    var em = eMaxFor(a);
+    var ec = clamp(e, 0, em);
+    var rp = a * (1 - ec), ra = a * (1 + ec);
+    var T = periodSeconds(a);
+    return {
+      h: h, a: a, e: ec, rp: rp, ra: ra, T: T,
+      vp: visViva(rp, a),
+      cls: classification({ e: ec, h: h, ra: ra })
+    };
+  }
+
+  function resolveConfig(sel) {
+    if (sel === 'current') return configFrom(state.h, state.e);
+    var p = COMPARE_PRESETS[sel];
+    return configFrom(p.h, p.e);
+  }
+
+  function cmpRow(label, A, B, av, bv, fmtVal) {
+    var max = Math.max(av, bv) || 1;
+    var ratio = av > 0 ? (bv / av) : 0;
+    return '<div class="cmp-row">' +
+      '<div class="cmp-head"><span class="lbl2">' + label + '</span>' +
+      '<span class="ratio">B ÷ A = ' + fmt(ratio, 2) + '×</span></div>' +
+      '<div class="cmp-line"><span class="cmp-tag">A</span>' +
+        '<div class="track"><div class="fill fill-a" style="width:' + Math.max(3, av / max * 100) + '%"></div></div>' +
+        '<span class="cmp-val">' + A + ' — ' + fmtVal(av) + '</span></div>' +
+      '<div class="cmp-line"><span class="cmp-tag">B</span>' +
+        '<div class="track"><div class="fill fill-b" style="width:' + Math.max(3, bv / max * 100) + '%"></div></div>' +
+        '<span class="cmp-val">' + B + ' — ' + fmtVal(bv) + '</span></div>' +
+      '</div>';
+  }
+
+  function cmpText(label, Av, Bv) {
+    return '<div class="cmp-text"><span class="k">' + label + '</span>' +
+      '<span class="v">A: ' + Av + ' &nbsp;·&nbsp; B: ' + Bv + '</span></div>';
+  }
+
+  function renderComparison() {
+    var a = resolveConfig($('cmpA').value);
+    var b = resolveConfig($('cmpB').value);
+    var An = ($('cmpA').selectedOptions[0] || {}).textContent || 'A';
+    var Bn = ($('cmpB').selectedOptions[0] || {}).textContent || 'B';
+    An = An.split('—')[0].trim() || 'A';
+    Bn = Bn.split('—')[0].trim() || 'B';
+
+    var html = '';
+    html += cmpRow('Semimajor axis a', An, Bn, a.a, b.a, function (v) { return d(v, 0); });
+    html += cmpRow('Orbital period', An, Bn, a.T, b.T, function (v) { return fmt(v / 3600, 2) + ' h'; });
+    html += cmpRow('Perigee altitude', An, Bn, a.rp - RE, b.rp - RE, function (v) { return d(v, 0); });
+    html += cmpRow('Apogee altitude', An, Bn, a.ra - RE, b.ra - RE, function (v) { return d(v, 0); });
+    html += cmpText('Eccentricity', fmt(a.e, 4), fmt(b.e, 4));
+    html += cmpText('Speed at perigee', fmt(a.vp, 3) + ' km/s', fmt(b.vp, 3) + ' km/s');
+    html += cmpText('Classification', a.cls, b.cls);
+    cmpTable.innerHTML = html;
+  }
+
+  /* =========================================================
+     CONTROL SYNC
+     ========================================================= */
+  function syncControls() {
+    var playing = state.playing;
+    $('btnPlay').setAttribute('aria-pressed', String(playing));
+    $('heroPlayBtn').setAttribute('aria-pressed', String(playing));
+    $('playIcon').textContent = playing ? '❚❚' : '▶';
+    $('heroPlayIcon').textContent = playing ? '❚❚' : '▶';
+    $('playLabel').textContent = playing ? 'Pause' : 'Play';
+    $('heroPlayLabel').textContent = playing ? 'Pause' : 'Play';
+
+    var pill = $('statusPill');
+    $('statusText').textContent = playing ? 'SIM ACTIVE' : 'SIM PAUSED';
+    pill.classList.toggle('is-live', playing);
+    pill.classList.toggle('is-paused', !playing);
+
+    $('speedOut').textContent = '×' + state.speed.toFixed(1);
+    $('speedRange').value = String(state.speed);
+    $('altRange').value = String(state.h);
+    $('eccRange').value = String(Math.round(state.e * 1000) / 1000);
+    $('orbitType').value = currentType();
+
+    $('paramsToggle').checked = state.showParams;
+    $('starToggle').checked = state.starfield;
+
+    var ub = $('btnUnits');
+    var miles = state.units === 'mi';
+    ub.textContent = miles ? 'Distance: miles' : 'Distance: kilometres';
+    ub.setAttribute('aria-pressed', String(miles));
+  }
+
+  function renderAll() {
+    renderTelemetry();
+    renderDerived();
+    renderComparison();
+    updateClocks();
+    syncControls();
+  }
+
+  /* =========================================================
+     ACTIONS
+     ========================================================= */
+  function invalidate() {
+    if (rafId == null) { last = 0; rafId = requestAnimationFrame(frame); }
+  }
+
+  function setPlaying(v) {
+    state.playing = v;
+    syncControls();
+    renderTelemetry();
+    updateClocks();
+    invalidate();
+    announce(v ? 'Simulation playing.' : 'Simulation paused.');
+  }
+
+  function setAltitude(h, fromUser) {
+    var hv = clamp(safeNum(h, 400), H_MIN, H_MAX);
+    state.h = hv;
+    var em = eMaxFor(RE + hv);
+    if (state.e > em) {
+      state.e = Math.floor(em / ECC_STEP) * ECC_STEP;
+      if (state.e < 0) state.e = 0;
+      state._clampMsg = '<b>Eccentricity limited to ' + fmt(state.e, 3) + '.</b> At ' +
+        d(hv, 0) + ' altitude the perigee radius a(1 − e) must remain above Earth\u2019s surface (' +
+        d(RE, 0) + '), which caps e at ' + fmt(em, 3) +
+        '. Raise the altitude if you want a more eccentric orbit.';
+      if (fromUser) announce('Eccentricity limited to ' + fmt(state.e, 3) + ' at this altitude.');
+    } else {
+      state._clampMsg = null;
+    }
+    state.M = state.M % TAU;
+    renderAll();
+    invalidate();
+  }
+
+  function setEccentricity(e) {
+    var em = eMaxFor(RE + state.h);
+    var ev = clamp(safeNum(e, 0), 0, em);
+    if (ev >= em - 1e-12) {
+      ev = Math.floor(em / ECC_STEP) * ECC_STEP;
+      state._clampMsg = '<b>Eccentricity limited to ' + fmt(ev, 3) + '.</b> The perigee radius ' +
+        'a(1 − e) must remain above Earth\u2019s surface (' + d(RE, 0) + ') at ' + d(state.h, 0) +
+        ' altitude, so e ≤ ' + fmt(em, 3) + ' here.';
+      announce('Eccentricity limited to ' + fmt(ev, 3) + ': perigee would otherwise intersect Earth.');
+    } else {
+      state._clampMsg = null;
+    }
+    state.e = ev;
+    renderAll();
+    invalidate();
+  }
+
+  function applyType(type, announceIt) {
+    var p = TYPE_PRESETS[type] || TYPE_PRESETS.circular;
+    state.h = p.h;
+    state.e = p.e;
+    state._clampMsg = null;
+    renderAll();
+    invalidate();
+    if (announceIt) {
+      var dcfg = derive();
+      announce(type + ' reference loaded: altitude ' + d(p.h, 0) + ', eccentricity ' +
+        fmt(dcfg.e, 3) + ', period ' + minHours(dcfg.T) + '.');
+    }
+  }
+
+  function resetAll() {
+    state.speed = 1;
+    state.h = 400;
+    state.e = 0;
+    state.units = 'km';
+    state.showParams = true;
+    state.starfield = true;
+    state.M = 0;
+    state.simSeconds = 0;
+    state._clampMsg = null;
+    state.playing = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    $('cmpA').value = 'current';
+    $('cmpB').value = 'geo';
+    renderAll();
+    invalidate();
+    announce('Simulation reset: 400 km circular orbit, eccentricity 0, speed ×1.0, kilometres.');
+    showToast('Simulation reset — 400 km circular orbit, ×1.0, kilometres.');
+  }
+
+  /* =========================================================
+     ANIMATION LOOP — idle while paused
+     ========================================================= */
+  var last = 0;
+  var rafId = null;
+  var telemAcc = 0;
+
+  function frame(now) {
+    rafId = null;
+    var dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+    last = now;
+
+    if (state.playing) {
+      advance(dt);
+      telemAcc += dt;
+      if (telemAcc > 0.1) { telemAcc = 0; renderTelemetry(); updateClocks(); }
+    }
+
+    renderScene();
+
+    if (state.playing) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      last = 0;   /* paused: go idle, and add no time jump on resume */
+    }
+  }
+
+  /* =========================================================
+     THEME
+     ========================================================= */
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    var btn = $('themeBtn');
+    btn.setAttribute('aria-pressed', String(t === 'light'));
+    btn.textContent = t === 'light' ? '☾ Theme: Light' : '◐ Theme: Dark';
+    try { localStorage.setItem('smc-theme', t); } catch (err) { /* storage unavailable */ }
+    invalidate();
+  }
+
+  /* =========================================================
+     EVENT WIRING
+     ========================================================= */
+  function wire() {
+    $('btnPlay').addEventListener('click', function () { setPlaying(!state.playing); });
+    $('heroPlayBtn').addEventListener('click', function () { setPlaying(!state.playing); });
+
+    $('speedRange').addEventListener('input', function (e) {
+      var v = safeNum(Number(e.target.value), 1);
+      state.speed = clamp(v, 0.2, 50);
+      $('speedOut').textContent = '×' + state.speed.toFixed(1);
+      updateClocks();
+      announce('Simulation speed ×' + state.speed.toFixed(1) + ': ' +
+        fmt(SIM_SECONDS_PER_REAL_SECOND * state.speed, 0) + ' simulated seconds per real second.');
+    });
+
+    $('orbitType').addEventListener('change', function (e) {
+      applyType(e.target.value, true);
+    });
+
+    $('btnRestore').addEventListener('click', function () {
+      state.M = 0;
+      applyType($('orbitType').value, false);
+      var dcfg = derive();
+      announce('Reference configuration restored: ' + currentType() + ', altitude ' + d(state.h, 0) +
+        ', eccentricity ' + fmt(dcfg.e, 3) + ', satellite at perigee.');
+      showToast('Reference restored — ' + currentType() + ' at ' + dNum(state.h, 0) + ' ' + unitLabel() + '.');
+    });
+
+    $('altRange').addEventListener('input', function (e) {
+      setAltitude(Number(e.target.value), true);
+    });
+
+    $('eccRange').addEventListener('input', function (e) {
+      setEccentricity(Number(e.target.value));
+    });
+
+    $('paramsToggle').addEventListener('change', function (e) {
+      state.showParams = e.target.checked;
+      invalidate();
+      announce(state.showParams ? 'Orbital parameters shown on the figure.' : 'Orbital parameters hidden.');
+    });
+
+    $('starToggle').addEventListener('change', function (e) {
+      state.starfield = e.target.checked;
+      invalidate();
+      announce(state.starfield ? 'Starfield on.' : 'Starfield off.');
+    });
+
+    $('btnUnits').addEventListener('click', function () {
+      state.units = state.units === 'km' ? 'mi' : 'km';
+      renderAll();
+      invalidate();
+      announce('Distances now shown in ' + (state.units === 'mi' ? 'miles' : 'kilometres') + '.');
+    });
+
+    $('btnReset').addEventListener('click', resetAll);
+
+    $('cmpA').addEventListener('change', renderComparison);
+    $('cmpB').addEventListener('change', renderComparison);
+
+    $('themeBtn').addEventListener('click', function () {
+      setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    });
+
+    $('navToggle').addEventListener('click', function () {
+      var nav = $('primaryNav');
+      var open = nav.classList.toggle('is-open');
+      $('navToggle').setAttribute('aria-expanded', String(open));
+    });
+
+    /* keyboard: step the orbital phase, play/pause */
+    canvas.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        state.M += TAU / 24;
+        renderTelemetry();
+        invalidate();
+        announce('Phase ' + fmt(((satState(derive()).nu * 180 / Math.PI) + 360) % 360, 0) + ' degrees from perigee.');
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        state.M -= TAU / 24;
+        renderTelemetry();
+        invalidate();
+        announce('Phase ' + fmt(((satState(derive()).nu * 180 / Math.PI) + 360) % 360, 0) + ' degrees from perigee.');
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        setPlaying(!state.playing);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        var dcfg = derive(), sat = satState(dcfg);
+        announce(classification(dcfg) + '. Altitude ' + d(sat.alt, 0) + ', velocity ' +
+          fmt(sat.v, 2) + ' kilometres per second, period ' + minHours(dcfg.T) + '.');
+      }
+    });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { layout(); }).observe(canvas.parentNode);
+    }
+    window.addEventListener('resize', layout);
+  }
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+  function init() {
+    var saved = null;
+    try { saved = localStorage.getItem('smc-theme'); } catch (err) { saved = null; }
+    setTheme(saved === 'light' ? 'light' : 'dark');
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      state.playing = false;
+    }
+
+    /* state is valid by construction; re-clamp defensively before first paint */
+    var dcfg = derive();
+    state.e = clamp(state.e, 0, dcfg.emax);
+
+    /* dynamic method note: computed, never hard-coded wrongly */
+    var geoA = RE + 35786;
+    $('geoPeriodCalc').textContent = '≈ ' + fmt(periodSeconds(geoA), 0) + ' s';
+
+    wire();
+    layout();
+    renderAll();
+    renderScene();      /* synchronous first paint — never a blank canvas */
+    invalidate();       /* then let the loop take over while playing */
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

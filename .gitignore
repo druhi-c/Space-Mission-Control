@@ -1,0 +1,13 @@
+# Freebuff local project metadata (per-machine, not part of the site)
+.freebuff/
+
+# Exported briefing files produced by the Mission Planner during local use
+*-briefing.txt
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/

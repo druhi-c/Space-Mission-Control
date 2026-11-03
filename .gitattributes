@@ -1,0 +1,7 @@
+# Normalise line endings in the repository; check out with the platform default.
+* text=auto
+
+*.html text eol=lf
+*.md   text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf

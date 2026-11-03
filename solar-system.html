@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Solar System Explorer — SPACE MISSION CONTROL</title>
+<!--
+  SPACE MISSION CONTROL — page wiring
+  -----------------------------------
+  This file:           solar-system.html     (active page, link below)
+  Linked pages:        orbital-lab.html      (Orbital Dynamics Lab)
+                       mission-planner.html  (Mission Planner)
+  All three pages are built and cross-linked.
+-->
+<style>
+:root{
+  --bg:#05070f;
+  --bg-1:#070c18;
+  --panel:rgba(9,14,26,.94);
+  --panel-2:#0b1222;
+  --line:rgba(120,170,220,.20);
+  --line-strong:rgba(125,195,235,.45);
+  --text:#e3edf9;
+  --muted:#9db1cb;
+  --accent:#22d3ee;
+  --accent-2:#60a5fa;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --radius:12px;
+  --shadow:0 12px 32px rgba(0,0,0,.4);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+:root[data-theme="light"]{
+  --bg:#eef2f9;
+  --bg-1:#ffffff;
+  --panel:#ffffff;
+  --panel-2:#f4f7fc;
+  --line:rgba(14,44,78,.16);
+  --line-strong:rgba(14,58,98,.4);
+  --text:#0c1a2b;
+  --muted:#41566f;
+  --accent:#0a7186;
+  --accent-2:#1d4ed8;
+  --ok:#0d6e4d;
+  --warn:#8a5a00;
+  --radius:12px;
+  --shadow:0 10px 26px rgba(16,32,60,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(56,120,220,.14), transparent 60%),
+    radial-gradient(900px 500px at 5% 0%, rgba(34,211,238,.08), transparent 60%),
+    linear-gradient(180deg,var(--bg-1),var(--bg) 320px);
+  background-color:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:.02em}
+p{margin:0}
+a{color:var(--accent-2)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-48px;z-index:60;background:var(--accent);color:#04121a;padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none;transition:.2s}
+.skip:focus{top:8px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:10px 18px;
+  background:color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{
+  width:26px;height:26px;border-radius:50%;flex:none;
+  background:conic-gradient(from 210deg,var(--accent),var(--accent-2),#f0b429,var(--accent));
+  box-shadow:0 0 12px rgba(34,211,238,.55);
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.15}
+.brand-text b{font-size:.86rem;letter-spacing:.14em;font-weight:800}
+.brand-text small{font-size:.68rem;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-left:6px}
+.navlink{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:40px;padding:0 12px;border-radius:9px;
+  color:var(--muted);text-decoration:none;font-size:.84rem;font-weight:600;
+  border:1px solid transparent;transition:.16s;
+}
+.navlink:hover{color:var(--text);border-color:var(--line)}
+.navlink.is-active{color:var(--text);background:rgba(34,211,238,.10);border-color:rgba(34,211,238,.5)}
+.navlink .tag{
+  font-size:.6rem;letter-spacing:.1em;padding:2px 5px;border-radius:4px;
+  border:1px solid var(--warn);color:var(--warn);font-weight:700;
+}
+:root[data-theme="light"] .navlink .tag{border-color:var(--warn);color:var(--warn)}
+.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.status{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;
+  padding:8px 12px;border-radius:99px;border:1px solid var(--line-strong);
+  background:var(--panel-2);color:var(--text);
+}
+.status .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.status.is-paused .dot{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.status.is-live .dot{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+  min-height:42px;padding:0 .95rem;border-radius:9px;
+  border:1px solid var(--line-strong);
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  color:var(--text);font:inherit;font-size:.85rem;font-weight:650;letter-spacing:.02em;
+  cursor:pointer;transition:border-color .16s,color .16s,background .16s;
+}
+:root[data-theme="light"] .btn{background:linear-gradient(180deg,#fff,#f2f6fc)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{
+  background:linear-gradient(180deg,rgba(34,211,238,.26),rgba(34,211,238,.09));
+  border-color:rgba(34,211,238,.65);color:#d7fbff;
+}
+:root[data-theme="light"] .btn-primary{background:linear-gradient(180deg,#0a7186,#0c8ba4);color:#fff;border-color:#0a7186}
+.btn-primary:hover{color:#fff;border-color:var(--accent)}
+.btn-ghost{background:transparent}
+.btn .ico{font-size:.9em}
+.nav-toggle{display:none}
+
+/* ---------- layout ---------- */
+main{max-width:1500px;margin:0 auto;padding:18px 18px 40px}
+.panel{
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0)),var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+:root[data-theme="light"] .panel{background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.75)),var(--panel)}
+.panel-head{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 14px;border-bottom:1px solid var(--line);
+}
+.panel-head h2{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:750}
+.panel-badges{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.badge{
+  font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;
+  padding:5px 8px;border-radius:6px;border:1px solid var(--line-strong);color:var(--muted);
+}
+.badge.warn{border-color:rgba(251,191,36,.65);color:var(--warn)}
+.badge.accent{border-color:rgba(34,211,238,.6);color:var(--accent)}
+
+/* ---------- hero ---------- */
+.hero{padding:22px 4px 16px}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.26em;color:var(--accent);text-transform:uppercase}
+.hero h1{
+  font-size:clamp(1.9rem,5.2vw,3.3rem);font-weight:850;letter-spacing:.06em;margin-top:8px;
+  background:linear-gradient(92deg,#fff 10%,var(--accent) 65%,var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+:root[data-theme="light"] .hero h1{background:linear-gradient(92deg,#0c1a2b 10%,#0a7186 70%);-webkit-background-clip:text;background-clip:text}
+.hero .lede{max-width:74ch;color:var(--muted);margin-top:10px;font-size:.96rem}
+.hero-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.chip{
+  display:flex;flex-direction:column;gap:3px;
+  min-width:190px;padding:10px 14px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel-2);
+}
+.chip .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+.chip .v{font-family:var(--mono);font-size:.98rem;font-weight:650;color:var(--text)}
+.chip.chip-action{flex-direction:row;align-items:center;gap:12px;min-width:0}
+
+/* ---------- workspace ---------- */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;align-items:start}
+.canvas-wrap{position:relative;width:100%;aspect-ratio:16/9;min-height:320px;border-bottom:1px solid var(--line);overflow:hidden}
+#orbitCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:0 0 var(--radius) var(--radius)}
+.canvas-hint{
+  position:absolute;left:10px;bottom:10px;right:10px;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;
+  color:#cfe3f7;background:rgba(4,10,20,.72);border:1px solid rgba(140,190,235,.3);
+  padding:6px 9px;border-radius:7px;pointer-events:none;max-width:fit-content;
+}
+.canvas-note{
+  position:absolute;right:10px;top:10px;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:#ffd79a;
+  background:rgba(30,18,4,.7);border:1px solid rgba(251,191,36,.55);
+  padding:5px 8px;border-radius:6px;pointer-events:none;
+}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 14px}
+.legend-item{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;color:var(--muted);font-family:var(--mono);letter-spacing:.04em}
+.legend-swatch{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,.45);flex:none}
+
+/* ---------- side panels ---------- */
+.side{display:flex;flex-direction:column;gap:14px}
+.info-body{padding:14px}
+.info-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.info-title h3{font-size:1.5rem;font-weight:800;letter-spacing:.03em}
+.type-badge{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;
+  padding:4px 8px;border-radius:6px;border:1px solid rgba(34,211,238,.55);color:var(--accent);
+  background:rgba(34,211,238,.1);
+}
+:root[data-theme="light"] .type-badge{color:#0a7186;background:rgba(10,113,134,.08);border-color:rgba(10,113,134,.5)}
+.specs{display:grid;grid-template-columns:1fr;gap:0;margin:12px 0 0;padding:0}
+.specs .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px dashed var(--line)}
+.specs dt{color:var(--muted);font-size:.78rem;letter-spacing:.04em}
+.specs dd{margin:0;text-align:right;font-family:var(--mono);font-size:.84rem;font-weight:600;word-break:break-word}
+.specs dd .sub{display:block;font-weight:400;font-size:.72rem;color:var(--muted)}
+.flag{display:inline-block;margin-top:3px;font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;padding:2px 6px;border-radius:5px;border:1px solid var(--warn);color:var(--warn)}
+.desc{margin-top:12px;font-size:.88rem;color:var(--muted);border-left:2px solid var(--accent);padding-left:10px}
+.retro-note{margin-top:10px;font-size:.8rem;color:var(--warn);border:1px solid rgba(251,191,36,.4);border-radius:8px;padding:8px 10px;background:rgba(251,191,36,.07)}
+.stats{padding:12px 14px 14px;display:grid;gap:8px}
+.stat-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2)}
+.stat-row .k{font-size:.74rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.stat-row .v{font-family:var(--mono);font-size:.88rem;font-weight:700;text-align:right}
+
+/* ---------- controls ---------- */
+.controls{
+  margin-top:14px;padding:12px 14px;
+  display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;
+}
+.ctl{display:flex;align-items:center;gap:9px;font-size:.8rem;color:var(--muted);letter-spacing:.04em}
+.ctl output,.ctl .val{font-family:var(--mono);font-weight:700;color:var(--text);min-width:52px}
+input[type=range]{accent-color:var(--accent);width:170px;height:26px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--accent);width:20px;height:20px;cursor:pointer}
+.switch{
+  display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 12px;
+  border:1px solid var(--line-strong);border-radius:9px;background:var(--panel-2);
+  font-size:.84rem;font-weight:600;cursor:pointer;color:var(--text);
+}
+.switch:hover{border-color:var(--accent)}
+select,input[type=search]{
+  font:inherit;font-size:.86rem;color:var(--text);
+  background:var(--panel-2);border:1px solid var(--line-strong);
+  border-radius:9px;min-height:42px;padding:0 10px;
+}
+select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#searchInput{width:100%;min-width:0}
+
+/* ---------- lower grid ---------- */
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:7px;padding:14px}
+.field label,.field .lbl{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.results{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 14px}
+.result-btn{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  min-height:46px;padding:8px 12px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--line-strong);background:var(--panel-2);
+  color:var(--text);font:inherit;text-align:left;transition:.15s;
+}
+.result-btn:hover{border-color:var(--accent)}
+.result-btn .r-name{font-size:.86rem;font-weight:700}
+.result-btn .r-type{font-family:var(--mono);font-size:.66rem;color:var(--muted);letter-spacing:.05em}
+.result-btn[aria-pressed="true"]{border-color:var(--accent);background:rgba(34,211,238,.14);box-shadow:inset 0 0 0 1px rgba(34,211,238,.4)}
+.empty{padding:0 14px 16px;color:var(--muted);font-size:.86rem}
+.cmp-controls{display:flex;gap:12px;flex-wrap:wrap;padding:14px 14px 6px}
+.cmp-controls .field{padding:0;flex:1 1 190px;min-width:170px}
+.cmp-controls select{width:100%}
+.cmp-table{padding:8px 14px 14px;display:grid;gap:14px}
+.cmp-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel-2)}
+.cmp-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cmp-head .lbl2{font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:750}
+.cmp-head .ratio{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--accent)}
+.cmp-line{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:9px;align-items:center;margin:6px 0}
+.cmp-tag{
+  font-family:var(--mono);font-size:.66rem;font-weight:800;text-align:center;
+  border:1px solid var(--line-strong);border-radius:5px;padding:2px 0;color:var(--muted);
+}
+.track{height:12px;border-radius:99px;background:rgba(125,175,220,.18);overflow:hidden;border:1px solid var(--line)}
+.fill{height:100%;border-radius:99px;transition:width .4s ease}
+.fill-a{background:linear-gradient(90deg,#22d3ee,#0ea5e9)}
+.fill-b{background:linear-gradient(90deg,#818cf8,#3b82f6)}
+.cmp-val{font-family:var(--mono);font-size:.78rem;font-weight:650;text-align:right;min-width:120px}
+
+/* ---------- method / footer ---------- */
+.method{margin-top:14px;padding:16px 18px}
+.method h2{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:750;margin-bottom:10px}
+.method ul{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem;display:grid;gap:7px}
+.method li b,.method li strong{color:var(--text)}
+.method code{font-family:var(--mono);font-size:.8em;background:var(--panel-2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;color:var(--accent)}
+footer{padding:22px 4px 6px;color:var(--muted);font-size:.8rem;border-top:1px solid var(--line);margin-top:18px}
+footer b{color:var(--text)}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);
+  max-width:min(92vw,620px);z-index:70;
+  background:var(--panel-2);color:var(--text);
+  border:1px solid var(--accent);border-radius:10px;
+  padding:12px 16px;font-size:.86rem;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:.25s;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1080px){
+  .workspace{grid-template-columns:1fr}
+  .lower{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .nav{
+    order:3;width:100%;margin-left:0;display:none;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px;
+  }
+  .nav.is-open{display:flex}
+  .nav-toggle{display:inline-flex}
+  .navlink{flex:1 1 auto;justify-content:center;min-height:44px}
+  .topbar-right{margin-left:auto}
+}
+@media (max-width:640px){
+  main{padding:12px 12px 32px}
+  .canvas-wrap{aspect-ratio:1/1;min-height:300px}
+  .btn{min-height:46px;padding:0 14px}
+  .chip{min-width:0;flex:1 1 100%}
+  input[type=range]{width:100%;flex:1 1 160px;height:44px}
+  .controls{gap:10px}
+  .cmp-val{min-width:0}
+  .cmp-line{grid-template-columns:20px minmax(0,1fr)}
+  .cmp-val{grid-column:2;text-align:left}
+  .canvas-hint{font-size:.6rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#viz">Skip to the simulation</a>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="brand-text"><b>SPACE MISSION CONTROL</b><small>Solar System Explorer</small></span>
+  </div>
+
+  <button class="btn btn-ghost nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryNav">☰ Menu</button>
+
+  <nav class="nav" id="primaryNav" aria-label="Primary">
+    <a class="navlink is-active" href="solar-system.html" aria-current="page">Solar System</a>
+    <a class="navlink" href="orbital-lab.html">Orbital Dynamics Lab</a>
+    <a class="navlink" href="mission-planner.html">Mission Planner</a>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="status is-live" id="statusPill">
+      <span class="dot" aria-hidden="true"></span><span id="statusText">SIM ACTIVE</span>
+    </span>
+    <button class="btn btn-ghost" id="themeBtn" aria-pressed="false">◐ Theme: Dark</button>
+  </div>
+</header>
+
+<main>
+  <!-- ================= HERO ================= -->
+  <section class="hero" aria-labelledby="heroTitle">
+    <p class="eyebrow">Planetary Science Division · Schematic Model</p>
+    <h1 id="heroTitle">SOLAR SYSTEM EXPLORER</h1>
+    <p class="lede">
+      An interactive schematic of the Sun and its eight planets. Orbital motion is shown as simplified,
+      prograde, circular motion so relative ordering and relative pacing stay legible on any screen —
+      planet sizes, orbital radii and animation speeds are <b>not to scale</b>. Select any body to read its
+      published physical and orbital data.
+    </p>
+    <div class="hero-meta">
+      <div class="chip"><span class="k">Mission elapsed (simulated)</span><span class="v" id="metValue">T+ 000d 00:00:00</span></div>
+      <div class="chip"><span class="k">Simulation date (UTC)</span><span class="v" id="simDateValue">2026-10-31 00:00</span></div>
+      <div class="chip chip-action">
+        <span class="k">Simulation</span>
+        <button class="btn btn-primary" id="heroPlayBtn" aria-pressed="true">
+          <span class="ico" id="heroPlayIcon" aria-hidden="true">❚❚</span>
+          <span id="heroPlayLabel">Pause</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WORKSPACE ================= -->
+  <section class="workspace" id="viz" tabindex="-1" aria-label="Solar system visualization">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Orbital View — top-down ecliptic</h2>
+        <div class="panel-badges">
+          <span class="badge warn">SCHEMATIC — NOT TO SCALE</span>
+          <span class="badge accent" id="viewBadge">STANDARD VIEW</span>
+          <span class="badge" id="speedBadge">1.0×</span>
+        </div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="orbitCanvas" tabindex="0"
+                aria-label="Interactive schematic of the Sun and eight planets. Click or tap a body to inspect it."
+                aria-describedby="canvasHelp"></canvas>
+        <p id="canvasHelp" class="sr-only">
+          Use the left and right arrow keys to move between planets, or use the planet selector and the
+          planet index list below. This drawing is schematic: distances, sizes and speeds are compressed
+          for legibility.
+        </p>
+        <span class="canvas-note">SCHEMATIC · NOT TO SCALE</span>
+        <span class="canvas-hint">Click/tap a body to inspect · ←/→ cycle planets · Orbit radii use log spacing</span>
+      </div>
+      <div class="legend" id="legend" aria-label="Body colour legend"></div>
+    </div>
+
+    <aside class="side">
+      <!-- Info panel -->
+      <section class="panel" aria-labelledby="infoHeading">
+        <div class="panel-head">
+          <h2 id="infoHeading">Planetary data</h2>
+          <div class="panel-badges"><span class="badge" id="infoIndexBadge">3 / 8</span></div>
+        </div>
+        <div class="info-body" id="infoBody"></div>
+      </section>
+
+      <!-- Statistics panel -->
+      <section class="panel" aria-labelledby="statsHeading">
+        <div class="panel-head"><h2 id="statsHeading">Telemetry</h2></div>
+        <div class="stats">
+          <div class="stat-row"><span class="k" id="stSelectedLabel">Selected planet</span><span class="v" id="stSelected">Earth</span></div>
+          <div class="stat-row"><span class="k">Distance from Sun</span><span class="v" id="stDistance">1.000 AU</span></div>
+          <div class="stat-row"><span class="k">Orbital period</span><span class="v" id="stPeriod">365.26 d</span></div>
+          <div class="stat-row"><span class="k">Classification</span><span class="v" id="stClass">Terrestrial planet</span></div>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <!-- ================= CONTROLS ================= -->
+  <section class="panel controls" role="group" aria-label="Simulation controls">
+    <button class="btn btn-primary" id="btnPlay" aria-pressed="true">
+      <span class="ico" id="playIcon" aria-hidden="true">❚❚</span><span id="playLabel">Pause</span>
+    </button>
+
+    <label class="ctl" for="speedRange">
+      Speed <output id="speedOut" for="speedRange">1.0×</output>
+    </label>
+    <input type="range" id="speedRange" min="1" max="100" step="1" value="10"
+           aria-label="Simulation speed, 0.1 to 10 times">
+
+    <label class="switch" for="orbitToggle">
+      <input type="checkbox" id="orbitToggle" checked> Orbital paths
+    </label>
+
+    <button class="btn" id="btnView" aria-pressed="false">View: Standard</button>
+
+    <label class="ctl" for="planetSelect">Body</label>
+    <select id="planetSelect" aria-label="Select a body: planets or the Sun"></select>
+
+    <button class="btn" id="btnReset">⟲ Reset simulation</button>
+  </section>
+
+  <!-- ================= LOWER ================= -->
+  <section class="lower">
+    <!-- Search / planet index -->
+    <div class="panel" aria-labelledby="searchHeading">
+      <div class="panel-head"><h2 id="searchHeading">Planet index · search</h2>
+        <div class="panel-badges"><span class="badge" id="searchCount">8 of 8</span></div>
+      </div>
+      <div class="field">
+        <label for="searchInput">Filter by name or classification</label>
+        <input type="search" id="searchInput" placeholder="e.g. Mars, terrestrial, ice giant…" autocomplete="off">
+      </div>
+      <div class="results" id="results"></div>
+      <p class="empty" id="searchEmpty" hidden></p>
+    </div>
+
+    <!-- Comparison mode -->
+    <div class="panel" aria-labelledby="cmpHeading">
+      <div class="panel-head"><h2 id="cmpHeading">Comparison mode</h2>
+        <div class="panel-badges"><span class="badge accent">A / B</span></div>
+      </div>
+      <div class="cmp-controls">
+        <div class="field">
+          <label for="cmpA">Body A</label>
+          <select id="cmpA"></select>
+        </div>
+        <div class="field">
+          <label for="cmpB">Body B</label>
+          <select id="cmpB"></select>
+        </div>
+      </div>
+      <div class="cmp-table" id="cmpTable"></div>
+    </div>
+  </section>
+
+  <!-- ================= METHOD ================= -->
+  <section class="panel method" aria-labelledby="methodHeading">
+    <h2 id="methodHeading">Data &amp; method — real values vs. visual parameters</h2>
+    <ul>
+      <li><b>Real published values</b> (used in the data, telemetry and comparison panels): mean radius, mean heliocentric distance, sidereal orbital period, sidereal rotation period, temperature and classification are standard reference figures (NASA planetary fact sheets / IAU conventions). Temperature context is stated for each body — surface for rocky planets, 1&nbsp;bar cloud-top level for the giants, photosphere for the Sun.</li>
+      <li><b>Dated satellite counts:</b> confirmed natural satellites as of <b>mid-2026</b> (IAU Minor Planet Center–announced orbits): Mercury 0, Venus 0, Earth 1, Mars 2, Jupiter <b>115</b>, Saturn <b>293</b>, Uranus <b>29</b>, Neptune <b>16</b>. These counts rise as new discoveries are confirmed, so treat them as a dated snapshot.</li>
+      <li><b>Visual parameters (not real):</b> orbital radii are <em>logarithmically compressed</em> (0.39–30.07&nbsp;AU mapped onto the drawing) and orbits are drawn as circles — eccentricity and inclination are ignored. Planet diameters use a compressed power scale, so the giants are drawn far smaller than reality and Mercury far larger, purely for legibility.</li>
+      <li><b>Angular speeds are compressed, not equalised:</b> each planet keeps its real period ordering via <code>T′ = 365.26 d × (T / 365.26 d)^0.55</code>, so Mercury really does lap Neptune many times over — inner planets are exaggerated, outer planets slowed so they remain visible. Nothing in this model implies equal orbital speeds.</li>
+      <li><b>The animation is illustrative.</b> One Earth orbit takes 20&nbsp;s at 1× speed, and the simulation clock advances 18.26 simulated days per real second at 1×, which is why the date readout races forward.</li>
+      <li><b>Page wiring:</b> this file is <code>solar-system.html</code>; the nav links to <code>orbital-lab.html</code> (Orbital Dynamics Lab) and <code>mission-planner.html</code> (Mission Planner). All three pages are self-contained and cross-linked.</li>
+    </ul>
+    <footer>
+      <b>SPACE MISSION CONTROL</b> · Solar System Explorer — standalone HTML/CSS/JS, no build step, no network access.
+      All values shown in the data panels are real reference figures; everything drawn on the canvas is a schematic.
+    </footer>
+  </section>
+</main>
+
+<div id="toast" aria-hidden="true"></div>
+<p class="sr-only" id="announce" aria-live="polite"></p>
+<noscript><p style="padding:20px">This simulation requires JavaScript to run.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     SCIENTIFIC DATA — real published mean values
+     ========================================================= */
+  var AU_KM = 149597870.7;
+  var EARTH_PERIOD_DAYS = 365.26;
+  var MOONS_ASOF = 'mid-2026';
+  var TAU = Math.PI * 2;
+
+  /* Visual-model constants (NOT real): see the "Data & method" panel */
+  var DAYS_PER_SECOND = EARTH_PERIOD_DAYS / 20; /* 1 Earth orbit = 20 s at 1× */
+  var SPEED_EXPONENT = 0.55;                    /* orbital-speed compression */
+
+  var SUN = {
+    id: 'sun', name: 'Sun', isStar: true,
+    type: 'G-type main-sequence star (G2V)',
+    cls: 'G-type main-sequence star (G2V)',
+    tags: 'star sun g-type main-sequence',
+    swatch: '#ffcf6b', base: '#ffe9b0', dark: '#d1701a',
+    radiusKm: 696340, au: 0,
+    periodDays: null, periodYears: null,
+    rotationDays: 25.4, rotationHours: 609.6, retrograde: false,
+    moons: 0, moonsNote: '0 — the eight planets orbit the Sun',
+    tempC: 5500, tempK: 5772, tempContext: 'photosphere (visible surface)',
+    desc: 'The Sun is a G2V main-sequence star holding about 99.86% of the solar system’s mass. Hydrogen fusion in its core produces the light and heat that every planet receives.'
+  };
+
+  var PLANETS = [
+    {
+      id: 'mercury', name: 'Mercury',
+      type: 'Terrestrial (rocky) planet', cls: 'Terrestrial planet',
+      tags: 'terrestrial rocky inner planet mercury',
+      swatch: '#b6ada3', base: '#c6beb4', dark: '#565049', band: '#8f867d',
+      radiusKm: 2439.7, au: 0.3871,
+      periodDays: 87.97, periodYears: 0.2408,
+      rotationDays: 58.65, rotationHours: 1407.6, retrograde: false,
+      moons: 0, moonsNote: '0',
+      tempC: 167, tempK: 440,
+      tempContext: 'mean surface temperature (ranges from about −173 °C to 427 °C)',
+      desc: 'Mercury is the smallest planet and the closest to the Sun, a heavily cratered, airless world with the most eccentric orbit of the eight. Its slow 58.65-day rotation is locked in a 3:2 spin–orbit resonance with its 88-day year.'
+    },
+    {
+      id: 'venus', name: 'Venus',
+      type: 'Terrestrial (rocky) planet', cls: 'Terrestrial planet',
+      tags: 'terrestrial rocky inner planet venus',
+      swatch: '#e8cf9b', base: '#f5e3b8', dark: '#9c7440', band: '#fdf6df',
+      radiusKm: 6051.8, au: 0.7233,
+      periodDays: 224.7, periodYears: 0.6152,
+      rotationDays: 243.02, rotationHours: 5832.5, retrograde: true,
+      moons: 0, moonsNote: '0',
+      tempC: 464, tempK: 737,
+      tempContext: 'mean surface temperature under a runaway greenhouse atmosphere',
+      desc: 'Venus is close to Earth in size but not in climate: a dense carbon-dioxide atmosphere makes it the hottest planet. It turns very slowly and in the opposite direction to most planets, so the Sun would rise in the west.',
+      retroNote: 'Retrograde rotation: Venus spins backwards relative to most planets (axial tilt about 177°).'
+    },
+    {
+      id: 'earth', name: 'Earth',
+      type: 'Terrestrial (rocky) planet', cls: 'Terrestrial planet',
+      tags: 'terrestrial rocky inner planet earth life',
+      swatch: '#4f8fe0', base: '#5a97e4', dark: '#123a75', land: '#3e9a55',
+      radiusKm: 6371.0, au: 1.0000,
+      periodDays: 365.26, periodYears: 1.0000,
+      rotationDays: 0.997, rotationHours: 23.93, retrograde: false,
+      moons: 1, moonsNote: '1',
+      tempC: 15, tempK: 288,
+      tempContext: 'mean surface temperature',
+      desc: 'Earth is the largest of the rocky planets and the only world known to host life. Liquid water oceans cover about 71% of its surface, and a magnetic field plus an oxygen-rich atmosphere shield the biosphere.'
+    },
+    {
+      id: 'mars', name: 'Mars',
+      type: 'Terrestrial (rocky) planet', cls: 'Terrestrial planet',
+      tags: 'terrestrial rocky inner planet mars red',
+      swatch: '#d1613a', base: '#d1613a', dark: '#6f2a19', band: '#b04d2c',
+      radiusKm: 3389.5, au: 1.5237,
+      periodDays: 686.98, periodYears: 1.8808,
+      rotationDays: 1.026, rotationHours: 24.62, retrograde: false,
+      moons: 2, moonsNote: '2 (Phobos, Deimos)',
+      tempC: -63, tempK: 210,
+      tempContext: 'mean surface temperature',
+      desc: 'Mars is a cold desert world with polar ice caps, the tallest volcano in the solar system (Olympus Mons) and a thin carbon-dioxide atmosphere under 1% of Earth’s surface pressure.'
+    },
+    {
+      id: 'jupiter', name: 'Jupiter',
+      type: 'Gas giant', cls: 'Gas giant',
+      tags: 'gas giant outer planet jupiter jovian',
+      swatch: '#e3c39a', base: '#e8cfa8', dark: '#8f6642', band: '#c79a6c',
+      radiusKm: 69911, au: 5.2029,
+      periodDays: 4332.59, periodYears: 11.862,
+      rotationDays: 0.414, rotationHours: 9.93, retrograde: false,
+      moons: 115, moonsNote: '115 (announced orbits)',
+      tempC: -108, tempK: 165,
+      tempContext: 'cloud-top temperature at the 1 bar level',
+      desc: 'Jupiter is the largest planet — more than twice the mass of all the others combined. It has no solid surface, spins in under ten hours, and carries the Great Red Spot, a storm wider than Earth.'
+    },
+    {
+      id: 'saturn', name: 'Saturn',
+      type: 'Gas giant', cls: 'Gas giant',
+      tags: 'gas giant outer planet saturn rings jovian',
+      swatch: '#ecd9a6', base: '#f0e0b4', dark: '#9d7d4a', band: '#faf1d8',
+      radiusKm: 58232, au: 9.5367,
+      periodDays: 10759.22, periodYears: 29.457,
+      rotationDays: 0.444, rotationHours: 10.66, retrograde: false,
+      moons: 293, moonsNote: '293 (announced orbits)',
+      tempC: -139, tempK: 134,
+      tempContext: 'cloud-top temperature at the 1 bar level',
+      desc: 'Saturn is the least dense planet — it would float in water — and is ringed by billions of icy particles. The rings span hundreds of thousands of kilometres yet are only tens of metres thick.'
+    },
+    {
+      id: 'uranus', name: 'Uranus',
+      type: 'Ice giant', cls: 'Ice giant',
+      tags: 'ice giant outer planet uranus cyan',
+      swatch: '#9fe0ea', base: '#a8e2ec', dark: '#2f7c9c', band: '#d6f4f9',
+      radiusKm: 25362, au: 19.1892,
+      periodDays: 30688.5, periodYears: 84.011,
+      rotationDays: 0.718, rotationHours: 17.24, retrograde: true,
+      moons: 29, moonsNote: '29',
+      tempC: -197, tempK: 76,
+      tempContext: 'cloud-top temperature at the 1 bar level',
+      desc: 'Uranus is an ice giant that rotates on its side (axial tilt about 97.8°), producing extreme 21-year seasons. Methane in its upper atmosphere gives it the pale cyan colour.',
+      retroNote: 'Retrograde rotation: measured in the opposite direction to most planets because the planet is tipped nearly 98° onto its side.'
+    },
+    {
+      id: 'neptune', name: 'Neptune',
+      type: 'Ice giant', cls: 'Ice giant',
+      tags: 'ice giant outer planet neptune blue',
+      swatch: '#4a6fe0', base: '#4d74e6', dark: '#16257a', band: '#7f9df5',
+      radiusKm: 24622, au: 30.0699,
+      periodDays: 60195, periodYears: 164.79,
+      rotationDays: 0.671, rotationHours: 16.11, retrograde: false,
+      moons: 16, moonsNote: '16',
+      tempC: -201, tempK: 72,
+      tempContext: 'cloud-top temperature at the 1 bar level',
+      desc: 'Neptune is the most distant planet: an ice giant with the fastest sustained winds in the solar system, over 2,000 km/h, powered by heat escaping from inside the planet.'
+    }
+  ];
+
+  var ALL = [SUN].concat(PLANETS);
+  function byId(id) {
+    for (var i = 0; i < ALL.length; i++) { if (ALL[i].id === id) return ALL[i]; }
+    return PLANETS[2];
+  }
+
+  /* =========================================================
+     STATE
+     ========================================================= */
+  var state = {
+    playing: true,
+    speed: 1,
+    showOrbits: true,
+    view: 'standard',
+    selected: 'earth',
+    hover: null,
+    search: ''
+  };
+  var simTime = 0;   /* simulated seconds (advances with speed) */
+  var simDays = 0;   /* simulated days  */
+  var SIM_EPOCH = Date.UTC(2026, 9, 31, 0, 0, 0);
+
+  var bodies = PLANETS.map(function (p, i) {
+    return {
+      p: p,
+      angle: i * 2.39996 + 0.7,
+      baseAngle: i * 2.39996 + 0.7,
+      orbitR: 40, pr: 8, px: 0, py: 0, spin: 0,
+      spinPeriod: 4 + 8 * Math.sqrt(p.rotationDays)
+    };
+  });
+  var sunBody = { p: SUN, px: 0, py: 0, pr: 16, orbitR: 0, spin: 0 };
+
+  /* =========================================================
+     DOM
+     ========================================================= */
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $('orbitCanvas');
+  var ctx = canvas.getContext('2d');
+  var infoBody = $('infoBody');
+  var resultsEl = $('results');
+  var cmpTable = $('cmpTable');
+  var toastEl = $('toast');
+  var announceEl = $('announce');
+
+  /* =========================================================
+     SMALL HELPERS
+     ========================================================= */
+  function fmt(n, dp) {
+    dp = (dp === undefined) ? 0 : dp;
+    return Number(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  }
+  function hexA(hex, a) {
+    var h = hex.replace('#', '');
+    var r = parseInt(h.substring(0, 2), 16);
+    var g = parseInt(h.substring(2, 4), 16);
+    var b = parseInt(h.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+  function rr(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function wrapPos(v, min, max) {
+    var span = max - min;
+    if (span <= 0) return v;
+    while (v < min) v += span;
+    while (v >= max) v -= span;
+    return v;
+  }
+  function norm01(v) { return ((v % 1) + 1) % 1; }
+  function signedTemp(c) { return (c < 0 ? '−' : '') + fmt(Math.abs(c)); }
+
+  var toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 5200);
+  }
+  function announce(msg) { announceEl.textContent = msg; }
+
+  /* =========================================================
+     VISUAL MODEL — sizes & orbits (schematic)
+     ========================================================= */
+  var W = 1, H = 1, DPR = 1, cx = 0, cy = 0, maxR = 100, minR = 30, sunR = 15;
+
+  function sizeFor(p) {
+    var base = 3.0 + 0.092 * Math.sqrt(p.radiusKm);
+    if (state.view === 'educational') {
+      /* compressed toward comparable sizes for legibility */
+      return 8 + 15 * (Math.sqrt(p.radiusKm) / Math.sqrt(69911));
+    }
+    return base;
+  }
+
+  function layout() {
+    var rect = canvas.getBoundingClientRect();
+    W = Math.max(1, rect.width);
+    H = Math.max(1, rect.height);
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    cx = W / 2;
+    cy = H / 2;
+    maxR = Math.min(W, H) * 0.47;
+    minR = Math.max(26, maxR * 0.20);
+    sunR = Math.max(9, Math.min(26, minR * 0.48));
+
+    var lo = Math.log(0.3871), hi = Math.log(30.06992);
+    for (var i = 0; i < bodies.length; i++) {
+      var b = bodies[i];
+      var t = (Math.log(b.p.au) - lo) / (hi - lo);
+      b.orbitR = minR + t * (maxR - minR);
+      b.pr = sizeFor(b.p);
+    }
+    sunBody.px = cx; sunBody.py = cy; sunBody.pr = sunR;
+    buildBackground();
+    invalidate();
+  }
+
+  /* =========================================================
+     STARFIELD
+     ========================================================= */
+  var stars = (function () {
+    var seed = 20261031;
+    function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+    var out = [];
+    for (var i = 0; i < 260; i++) {
+      out.push({
+        x: rnd(), y: rnd(),
+        r: 0.3 + rnd() * 1.5,
+        a: 0.25 + rnd() * 0.65,
+        ph: rnd() * TAU,
+        sp: 0.4 + rnd() * 1.6,
+        hue: rnd()
+      });
+    }
+    return out;
+  })();
+
+  /* =========================================================
+     RENDERING
+     ========================================================= */
+  /* The nebula background never changes: bake it once per layout, then blit.
+     Filling two full-canvas radial gradients every frame was the single most
+     expensive per-frame operation. */
+  var bgCanvas = document.createElement('canvas');
+  var bgCtx = bgCanvas.getContext('2d');
+  var bgValid = false;
+
+  function buildBackground() {
+    bgCanvas.width = Math.max(1, Math.round(W * DPR));
+    bgCanvas.height = Math.max(1, Math.round(H * DPR));
+    bgCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    bgCtx.fillStyle = '#04060d';
+    bgCtx.fillRect(0, 0, W, H);
+
+    var g = bgCtx.createRadialGradient(W * 0.78, H * 0.18, 0, W * 0.78, H * 0.18, Math.max(W, H) * 0.65);
+    g.addColorStop(0, 'rgba(32,70,130,0.34)');
+    g.addColorStop(1, 'rgba(32,70,130,0)');
+    bgCtx.fillStyle = g;
+    bgCtx.fillRect(0, 0, W, H);
+
+    g = bgCtx.createRadialGradient(W * 0.12, H * 0.88, 0, W * 0.12, H * 0.88, Math.max(W, H) * 0.5);
+    g.addColorStop(0, 'rgba(20,110,120,0.16)');
+    g.addColorStop(1, 'rgba(20,110,120,0)');
+    bgCtx.fillStyle = g;
+    bgCtx.fillRect(0, 0, W, H);
+    bgValid = true;
+  }
+
+  function drawBackground(t) {
+    if (bgValid) {
+      ctx.drawImage(bgCanvas, 0, 0, W, H);
+    } else {
+      ctx.fillStyle = '#04060d';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      var tw = 0.72 + 0.28 * Math.sin(t * s.sp + s.ph);
+      ctx.globalAlpha = s.a * tw;
+      ctx.fillStyle = s.hue > 0.85 ? '#cfe6ff' : (s.hue < 0.1 ? '#ffe7c4' : '#ffffff');
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawChip(text, x, y, accent) {
+    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    var w = ctx.measureText(text).width + 12, h = 16;
+    var lx = x - w / 2, ly = y - h / 2;
+    lx = Math.max(3, Math.min(W - w - 3, lx));
+    ly = Math.max(3, Math.min(H - h - 3, ly));
+    rr(lx, ly, w, h, 4);
+    ctx.fillStyle = 'rgba(5,12,22,0.85)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = accent ? 'rgba(34,211,238,0.8)' : 'rgba(120,160,200,0.4)';
+    ctx.stroke();
+    ctx.fillStyle = accent ? '#a5f3fc' : '#cfe3f7';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, lx + w / 2, ly + h / 2 + 0.5);
+  }
+
+  function drawLabel(text, x, y, selected, radius) {
+    ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    var w = ctx.measureText(text).width + 14, h = 19;
+    var lx = x - w / 2;
+    var ly = y - radius - h - 7;
+    if (ly < 4) ly = y + radius + 7;
+    lx = Math.max(4, Math.min(W - w - 4, lx));
+    ly = Math.max(4, Math.min(H - h - 4, ly));
+
+    rr(lx, ly, w, h, 5);
+    ctx.fillStyle = selected ? 'rgba(8,20,34,0.95)' : 'rgba(5,12,22,0.8)';
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = selected ? 'rgba(34,211,238,0.95)' : 'rgba(125,170,215,0.4)';
+    ctx.stroke();
+    ctx.fillStyle = selected ? '#b6f5ff' : '#cfe3f7';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, lx + w / 2, ly + h / 2 + 0.5);
+  }
+
+  function drawOrbits() {
+    for (var i = 0; i < bodies.length; i++) {
+      var b = bodies[i];
+      var sel = b.p.id === state.selected;
+      ctx.beginPath();
+      ctx.arc(cx, cy, b.orbitR, 0, TAU);
+      ctx.lineWidth = sel ? 1.7 : 1;
+      if (state.view === 'educational') {
+        ctx.strokeStyle = sel ? 'rgba(34,211,238,0.95)' : 'rgba(96,165,250,0.5)';
+      } else {
+        ctx.strokeStyle = sel ? 'rgba(34,211,238,0.9)' : 'rgba(96,150,210,0.3)';
+      }
+      ctx.stroke();
+
+      if (state.view === 'educational') {
+        /* stagger each marker around its own ring so chips never collide */
+        var a = -Math.PI / 2 + i * 0.62;
+        var lx = cx + Math.cos(a) * b.orbitR;
+        var ly = cy + Math.sin(a) * b.orbitR;
+        drawChip((i + 1) + ' · ' + b.p.au.toFixed(2) + ' AU', lx, ly, sel);
+      }
+    }
+  }
+
+  function drawSun() {
+    var x = sunBody.px, y = sunBody.py, r = sunBody.pr;
+    var g = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 6);
+    g.addColorStop(0, 'rgba(255,190,95,0.5)');
+    g.addColorStop(0.25, 'rgba(255,150,55,0.16)');
+    g.addColorStop(1, 'rgba(255,140,40,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 6, 0, TAU);
+    ctx.fill();
+
+    g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+    g.addColorStop(0, '#fff7dd');
+    g.addColorStop(0.45, '#ffd257');
+    g.addColorStop(1, '#ff9b2e');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+
+    drawLabel('SUN', x, y, state.selected === 'sun', r);
+  }
+
+  function drawBands(x, y, r, phase, colors, alpha) {
+    var n = colors.length * 2;
+    var h = (2 * r) / n;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    var ph = norm01(phase);
+    for (var i = 0; i < n; i++) {
+      var yy = y - r + ((i / n + ph) % 1) * 2 * r;
+      ctx.fillStyle = colors[i % colors.length];
+      for (var k = -1; k <= 1; k++) {
+        ctx.fillRect(x - r, yy + k * 2 * r - h / 2, 2 * r, h);
+      }
+    }
+    ctx.restore();
+  }
+
+  function paintDetail(p, x, y, r, spin) {
+    var i, px, py;
+    switch (p.id) {
+      case 'mercury': {
+        var craters = [[-0.35, -0.3, 0.28], [0.3, 0.15, 0.22], [-0.1, 0.4, 0.18],
+                       [0.15, -0.45, 0.14], [-0.55, 0.2, 0.16], [0.5, -0.1, 0.12]];
+        for (i = 0; i < craters.length; i++) {
+          var c = craters[i];
+          ctx.beginPath();
+          ctx.arc(x + c[0] * r, y + c[1] * r, c[2] * r, 0, TAU);
+          ctx.fillStyle = 'rgba(72,66,60,0.5)';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + c[0] * r - c[2] * r * 0.25, y + c[1] * r - c[2] * r * 0.25, c[2] * r * 0.75, 0, TAU);
+          ctx.fillStyle = 'rgba(214,208,200,0.26)';
+          ctx.fill();
+        }
+        break;
+      }
+      case 'venus':
+        drawBands(x, y, r, spin, ['#fdf6df', '#e0c489', '#f7ecd0'], 0.45);
+        break;
+      case 'earth': {
+        var land = [[-0.35, -0.2, 0.45, 0.32], [0.3, 0.15, 0.4, 0.3],
+                    [-0.05, 0.5, 0.3, 0.2], [0.35, -0.5, 0.26, 0.2]];
+        var off = norm01(spin) * 2 * r;
+        ctx.fillStyle = '#3e9a55';
+        for (i = 0; i < land.length; i++) {
+          var L = land[i];
+          px = wrapPos(x + L[0] * r + off, x - r, x + r);
+          for (var k = -1; k <= 1; k++) {
+            ctx.beginPath();
+            ctx.ellipse(px + k * 2 * r, y + L[1] * r, L[2] * r, L[3] * r, 0.3, 0, TAU);
+            ctx.fill();
+          }
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        var clouds = [[-0.2, -0.4, 0.3, 0.12], [0.25, 0.05, 0.34, 0.11], [-0.1, 0.45, 0.26, 0.1]];
+        for (i = 0; i < clouds.length; i++) {
+          var c2 = clouds[i];
+          px = wrapPos(x + c2[0] * r + off * 0.7, x - r, x + r);
+          for (var k2 = -1; k2 <= 1; k2++) {
+            ctx.beginPath();
+            ctx.ellipse(px + k2 * 2 * r, y + c2[1] * r, c2[2] * r, c2[3] * r, 0, 0, TAU);
+            ctx.fill();
+          }
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath(); ctx.ellipse(x, y - r * 0.94, r * 0.66, r * 0.26, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x, y + r * 0.94, r * 0.66, r * 0.26, 0, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'mars':
+        drawBands(x, y, r, spin, ['#d1613a', '#b04d2c'], 0.4);
+        ctx.fillStyle = 'rgba(88,34,22,0.5)';
+        ctx.beginPath(); ctx.ellipse(x - r * 0.3, y + r * 0.1, r * 0.4, r * 0.26, 0.4, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + r * 0.35, y - r * 0.25, r * 0.3, r * 0.2, -0.3, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.beginPath(); ctx.ellipse(x, y - r * 0.92, r * 0.5, r * 0.22, 0, 0, TAU); ctx.fill();
+        break;
+      case 'jupiter':
+        drawBands(x, y, r, spin, ['#e8cfa8', '#c79a6c', '#f2e2c6', '#b98556'], 0.6);
+        ctx.fillStyle = 'rgba(181,83,60,0.92)';
+        px = x + Math.cos(norm01(spin) * TAU) * r * 0.45;
+        ctx.beginPath();
+        ctx.ellipse(px, y + r * 0.22, r * 0.24, r * 0.13, 0, 0, TAU);
+        ctx.fill();
+        break;
+      case 'saturn':
+        drawBands(x, y, r, spin, ['#f0dfb0', '#d9c084', '#faf1d8'], 0.45);
+        break;
+      case 'uranus':
+        drawBands(x, y, r, spin, ['#a8e2ec', '#86cfe0'], 0.3);
+        break;
+      case 'neptune':
+        drawBands(x, y, r, spin, ['#4d74e6', '#3a5ac8'], 0.32);
+        ctx.fillStyle = 'rgba(12,22,70,0.55)';
+        px = x + Math.cos(norm01(spin) * TAU + 2) * r * 0.4;
+        ctx.beginPath();
+        ctx.ellipse(px, y - r * 0.1, r * 0.26, r * 0.15, 0.2, 0, TAU);
+        ctx.fill();
+        break;
+      default:
+        break;
+    }
+  }
+
+  function drawRings(b, front) {
+    var x = b.px, y = b.py, r = b.pr, tilt = -0.42;
+    var start = front ? 0 : Math.PI;
+    var end = front ? Math.PI : TAU;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,216,170,0.92)';
+    ctx.lineWidth = Math.max(2, r * 0.32);
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 1.9, r * 0.6, tilt, start, end);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(206,188,142,0.6)';
+    ctx.lineWidth = Math.max(1, r * 0.13);
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 2.35, r * 0.74, tilt, start, end);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBody(b) {
+    var p = b.p, x = b.px, y = b.py, r = b.pr;
+    var toSun = Math.atan2(cy - y, cx - x);
+    var sel = p.id === state.selected;
+    var hov = p.id === state.hover;
+
+    var g = ctx.createRadialGradient(x, y, r * 0.7, x, y, r * 2.4);
+    g.addColorStop(0, hexA(p.swatch, sel ? 0.5 : 0.32));
+    g.addColorStop(1, hexA(p.swatch, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 2.4, 0, TAU);
+    ctx.fill();
+
+    if (sel || hov) {
+      ctx.save();
+      ctx.setLineDash(sel ? [5, 4] : [3, 4]);
+      ctx.lineDashOffset = -simTime * 6;
+      ctx.lineWidth = sel ? 1.6 : 1.2;
+      ctx.strokeStyle = sel ? 'rgba(34,211,238,0.95)' : 'rgba(200,230,255,0.7)';
+      ctx.beginPath();
+      ctx.arc(x, y, r + 7, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (p.id === 'saturn') drawRings(b, false);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.clip();
+
+    g = ctx.createLinearGradient(
+      x - Math.cos(toSun) * r, y - Math.sin(toSun) * r,
+      x + Math.cos(toSun) * r, y + Math.sin(toSun) * r
+    );
+    g.addColorStop(0, p.dark);
+    g.addColorStop(0.5, p.base);
+    g.addColorStop(1, p.dark);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+
+    if (!p.isStar) paintDetail(p, x, y, r, b.spin);
+
+    /* day / night terminator */
+    g = ctx.createLinearGradient(
+      x - Math.cos(toSun) * r, y - Math.sin(toSun) * r,
+      x + Math.cos(toSun) * r, y + Math.sin(toSun) * r
+    );
+    g.addColorStop(0, 'rgba(0,0,0,0.62)');
+    g.addColorStop(0.5, 'rgba(0,0,0,0.12)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    ctx.restore();
+
+    if (p.id === 'saturn') drawRings(b, true);
+
+    var idx = PLANETS.indexOf(p);
+    var label = state.view === 'educational' && idx >= 0
+      ? (idx + 1) + ' · ' + p.name.toUpperCase()
+      : p.name.toUpperCase();
+    drawLabel(label, x, y, sel, r);
+  }
+
+  function render() {
+    drawBackground(simTime);
+    if (state.showOrbits) drawOrbits();
+    drawSun();
+    /* outer planets first so inner bodies draw on top */
+    for (var i = bodies.length - 1; i >= 0; i--) drawBody(bodies[i]);
+  }
+
+  /* =========================================================
+     INTERACTION — canvas
+     ========================================================= */
+  function pointerPos(evt) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+  function hitTest(mx, my) {
+    var i, b, d, best = null, bestD = Infinity;
+    for (i = 0; i < bodies.length; i++) {
+      b = bodies[i];
+      d = Math.hypot(mx - b.px, my - b.py);
+      if (d <= Math.max(b.pr + 7, 15) && d < bestD) { bestD = d; best = b; }
+    }
+    if (best) return best;
+    var sat = bodies[5];
+    if (Math.hypot(mx - sat.px, my - sat.py) <= sat.pr * 2.3) return sat;
+    if (Math.hypot(mx - sunBody.px, my - sunBody.py) <= sunBody.pr + 9) return sunBody;
+    return null;
+  }
+
+  canvas.addEventListener('click', function (e) {
+    var p = pointerPos(e);
+    var hit = hitTest(p.x, p.y);
+    if (hit) selectBody(hit.p.id);
+  });
+  canvas.addEventListener('mousemove', function (e) {
+    var p = pointerPos(e);
+    var hit = hitTest(p.x, p.y);
+    var id = hit ? hit.p.id : null;
+    if (id !== state.hover) {
+      state.hover = id;
+      canvas.style.cursor = id ? 'pointer' : 'default';
+      invalidate();
+    }
+  });
+  canvas.addEventListener('mouseleave', function () {
+    state.hover = null;
+    canvas.style.cursor = 'default';
+    invalidate();
+  });
+  canvas.addEventListener('keydown', function (e) {
+    var ids = PLANETS.map(function (p) { return p.id; });
+    var cur = ids.indexOf(state.selected);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectBody(cur < 0 ? ids[0] : ids[(cur + 1) % ids.length]);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectBody(cur < 0 ? ids[ids.length - 1] : ids[(cur - 1 + ids.length) % ids.length]);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (state.hover) selectBody(state.hover);
+      else announce('Selected ' + byId(state.selected).name + '. Click a body to change selection.');
+    }
+  });
+
+  /* =========================================================
+     PANEL RENDERING
+     ========================================================= */
+  function distanceText(p) {
+    if (p.au === 0) return '0 AU (system centre)';
+    return p.au.toFixed(3) + ' AU';
+  }
+  function periodText(p) {
+    if (p.periodDays == null) return '—';
+    return fmt(p.periodDays, 2) + ' d';
+  }
+
+  function renderInfo() {
+    var p = byId(state.selected);
+    var idx = PLANETS.indexOf(p);
+
+    var periodHtml = p.periodDays == null
+      ? '—<span class="sub">the Sun does not orbit</span>'
+      : fmt(p.periodDays, 2) + ' d <span class="sub">(' +
+        (p.periodYears < 1 ? fmt(p.periodYears, 4) : fmt(p.periodYears, 2)) + ' yr)</span>';
+
+    var rotHtml = fmt(p.rotationDays, 2) + ' d <span class="sub">(' + fmt(p.rotationHours, 1) + ' h)</span>' +
+      (p.retrograde ? '<span class="flag">↺ retrograde</span>' : '');
+
+    var moonsHtml = (p.id === 'sun')
+      ? p.moonsNote
+      : p.moons + ' <span class="sub">confirmed, ' + MOONS_ASOF + ' — ' + p.moonsNote + '</span>';
+
+    var distHtml = p.au === 0
+      ? '0 AU<span class="sub">the Sun sits at the centre of the model</span>'
+      : p.au.toFixed(4) + ' AU <span class="sub">≈ ' + fmt(p.au * AU_KM / 1e6, 1) + ' million km</span>';
+
+    var tempHtml = signedTemp(p.tempC) + ' °C · ' + fmt(p.tempK) + ' K' +
+      '<span class="sub">— ' + p.tempContext + '</span>';
+
+    infoBody.innerHTML =
+      '<div class="info-title"><h3>' + p.name + '</h3><span class="type-badge">' + p.type + '</span></div>' +
+      '<dl class="specs">' +
+        '<div class="row"><dt>Mean radius</dt><dd>' + fmt(p.radiusKm, 1) + ' km</dd></div>' +
+        '<div class="row"><dt>Mean distance from Sun</dt><dd>' + distHtml + '</dd></div>' +
+        '<div class="row"><dt>Orbital period</dt><dd>' + periodHtml + '</dd></div>' +
+        '<div class="row"><dt>Rotation (sidereal)</dt><dd>' + rotHtml + '</dd></div>' +
+        '<div class="row"><dt>Natural satellites</dt><dd>' + moonsHtml + '</dd></div>' +
+        '<div class="row"><dt>Temperature</dt><dd>' + tempHtml + '</dd></div>' +
+      '</dl>' +
+      '<p class="desc">' + p.desc + '</p>' +
+      (p.retroNote ? '<p class="retro-note"><b>Rotation direction:</b> ' + p.retroNote + '</p>' : '');
+
+    $('infoIndexBadge').textContent = (idx >= 0 ? (idx + 1) : '—') + ' / 8';
+  }
+
+  function renderStats() {
+    var p = byId(state.selected);
+    $('stSelected').textContent = p.name;
+    $('stSelectedLabel').textContent = p.isStar ? 'Selected object' : 'Selected planet';
+    $('stDistance').textContent = distanceText(p);
+    $('stPeriod').textContent = periodText(p) + (p.periodYears != null ? ' (' + (p.periodYears < 1 ? fmt(p.periodYears, 4) : fmt(p.periodYears, 2)) + ' yr)' : '');
+    $('stClass').textContent = p.cls;
+  }
+
+  function matches(p, q) {
+    if (!q) return true;
+    return (p.name + ' ' + p.cls + ' ' + p.type + ' ' + p.tags).toLowerCase().indexOf(q) !== -1;
+  }
+
+  function renderResults() {
+    var q = state.search.trim().toLowerCase();
+    var shown = 0;
+    var html = '';
+    for (var i = 0; i < PLANETS.length; i++) {
+      var p = PLANETS[i];
+      if (!matches(p, q)) continue;
+      shown++;
+      html += '<button class="result-btn" type="button" data-id="' + p.id + '" aria-pressed="' +
+        (state.selected === p.id) + '"><span class="r-name">' + p.name +
+        '</span><span class="r-type">' + p.cls + ' · ' + p.au.toFixed(3) + ' AU</span></button>';
+    }
+    resultsEl.innerHTML = html;
+    $('searchCount').textContent = shown + ' of 8';
+    var empty = $('searchEmpty');
+    if (shown === 0) {
+      empty.hidden = false;
+      empty.textContent = 'No planets match “' + state.search + '”. Try “terrestrial”, “ice giant” or a planet name.';
+    } else {
+      empty.hidden = true;
+    }
+    syncDropdownFilter();
+  }
+
+  /* Update selection state only — keeps the DOM (and keyboard focus) intact. */
+  function syncResultSelection() {
+    var btns = resultsEl.querySelectorAll('.result-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].setAttribute('aria-pressed', String(btns[i].getAttribute('data-id') === state.selected));
+    }
+  }
+
+  /* Disable dropdown options filtered out by the search, but always keep the
+     current selection enabled so the selector never displays a disabled row. */
+  function syncDropdownFilter() {
+    var q = state.search.trim().toLowerCase();
+    var opts = $('planetSelect').options;
+    for (var j = 0; j < opts.length; j++) {
+      var opt = opts[j];
+      opt.disabled = (opt.value !== state.selected) && !matches(byId(opt.value), q);
+    }
+  }
+
+  function renderSearch() {
+    renderResults();
+    syncDropdownFilter();
+  }
+
+  function cmpRow(label, a, b, av, bv, fmtVal) {
+    var max = Math.max(av, bv) || 1;
+    var ratio = av > 0 ? (bv / av) : 0;
+    return '<div class="cmp-row">' +
+      '<div class="cmp-head"><span class="lbl2">' + label + '</span>' +
+      '<span class="ratio">' + b.name + ' ÷ ' + a.name + ' = ' + fmt(ratio, 2) + '×</span></div>' +
+      '<div class="cmp-line"><span class="cmp-tag">A</span>' +
+        '<div class="track"><div class="fill fill-a" style="width:' + Math.max(3, av / max * 100) + '%"></div></div>' +
+        '<span class="cmp-val">' + a.name + ' — ' + fmtVal(av) + '</span></div>' +
+      '<div class="cmp-line"><span class="cmp-tag">B</span>' +
+        '<div class="track"><div class="fill fill-b" style="width:' + Math.max(3, bv / max * 100) + '%"></div></div>' +
+        '<span class="cmp-val">' + b.name + ' — ' + fmtVal(bv) + '</span></div>' +
+      '</div>';
+  }
+
+  function renderCompare() {
+    var a = byId($('cmpA').value), b = byId($('cmpB').value);
+    var html = '';
+    html += cmpRow('Mean radius (km)', a, b, a.radiusKm, b.radiusKm, function (v) { return fmt(v, 0) + ' km'; });
+    html += cmpRow('Orbital period (days)', a, b, a.periodDays, b.periodDays, function (v) {
+      return fmt(v, 2) + ' d (' + (v / EARTH_PERIOD_DAYS < 1 ? fmt(v / EARTH_PERIOD_DAYS, 4) : fmt(v / EARTH_PERIOD_DAYS, 2)) + ' yr)';
+    });
+    html += cmpRow('Distance from Sun (AU)', a, b, a.au, b.au, function (v) { return v.toFixed(3) + ' AU'; });
+    cmpTable.innerHTML = html;
+  }
+
+  /* =========================================================
+     CONTROL SYNC
+     ========================================================= */
+  function syncControls() {
+    var playing = state.playing;
+    $('btnPlay').setAttribute('aria-pressed', String(playing));
+    $('heroPlayBtn').setAttribute('aria-pressed', String(playing));
+    $('playIcon').textContent = playing ? '❚❚' : '▶';
+    $('heroPlayIcon').textContent = playing ? '❚❚' : '▶';
+    $('playLabel').textContent = playing ? 'Pause' : 'Play';
+    $('heroPlayLabel').textContent = playing ? 'Pause' : 'Play';
+
+    var pill = $('statusPill');
+    $('statusText').textContent = playing ? 'SIM ACTIVE' : 'SIM PAUSED';
+    pill.classList.toggle('is-live', playing);
+    pill.classList.toggle('is-paused', !playing);
+
+    $('speedOut').textContent = state.speed.toFixed(1) + '×';
+    $('speedBadge').textContent = state.speed.toFixed(1) + '×';
+    $('speedRange').value = String(Math.round(state.speed * 10));
+
+    $('orbitToggle').checked = state.showOrbits;
+    $('btnView').textContent = 'View: ' + (state.view === 'standard' ? 'Standard' : 'Educational');
+    $('btnView').setAttribute('aria-pressed', String(state.view === 'educational'));
+    $('viewBadge').textContent = state.view === 'standard' ? 'STANDARD VIEW' : 'EDUCATIONAL VIEW';
+
+    if ($('planetSelect').value !== state.selected) $('planetSelect').value = state.selected;
+  }
+
+  function renderAll() {
+    renderInfo();
+    renderStats();
+    renderSearch();
+    renderCompare();
+    syncControls();
+  }
+
+  function selectBody(id) {
+    state.selected = id;
+    renderInfo();
+    renderStats();
+    syncResultSelection();
+    syncDropdownFilter();
+    syncControls();
+    invalidate();
+    var p = byId(id);
+    announce('Selected ' + p.name + '. ' + p.cls + '. Distance ' + distanceText(p) +
+             ', orbital period ' + periodText(p) + '.');
+  }
+
+  /* =========================================================
+     ACTIONS
+     ========================================================= */
+  function setPlaying(v) {
+    state.playing = v;
+    syncControls();
+    invalidate();
+    announce(v ? 'Simulation playing.' : 'Simulation paused.');
+  }
+  function setView(v) {
+    state.view = v;
+    layout();
+    syncControls();
+    announce(v === 'standard'
+      ? 'Standard view: sizes loosely follow real relative radii.'
+      : 'Educational view: sizes normalised, orbits numbered with AU distances.');
+  }
+  function resetAll() {
+    state.playing = true;
+    state.speed = 1;
+    state.showOrbits = true;
+    state.view = 'standard';
+    state.selected = 'earth';
+    state.hover = null;
+    state.search = '';
+    simTime = 0;
+    simDays = 0;
+    for (var i = 0; i < bodies.length; i++) bodies[i].angle = bodies[i].baseAngle;
+    $('searchInput').value = '';
+    $('cmpA').value = 'earth';
+    $('cmpB').value = 'jupiter';
+    layout();
+    renderAll();
+    announce('Simulation reset: playing at 1.0×, Earth selected, standard view.');
+    showToast('Simulation reset — speed 1.0×, standard view, Earth selected.');
+  }
+
+  /* =========================================================
+     CLOCKS
+     ========================================================= */
+  var clockAcc = 0;
+  function updateClocks() {
+    var d = Math.floor(simDays);
+    var rem = (simDays - d) * 24;
+    var hh = Math.floor(rem);
+    var mm = Math.floor((rem - hh) * 60);
+    var ss = Math.floor(((rem - hh) * 60 - mm) * 60);
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    $('metValue').textContent = 'T+ ' + String(d).padStart(3, '0') + 'd ' + pad(hh) + ':' + pad(mm) + ':' + pad(ss);
+
+    var date = new Date(SIM_EPOCH + simDays * 86400000);
+    function p2(n) { return (n < 10 ? '0' : '') + n; }
+    $('simDateValue').textContent = isFinite(date.getTime())
+      ? date.getUTCFullYear() + '-' + p2(date.getUTCMonth() + 1) + '-' + p2(date.getUTCDate()) +
+        ' ' + p2(date.getUTCHours()) + ':' + p2(date.getUTCMinutes()) + 'Z'
+      : '+' + fmt(d, 0) + ' days (beyond Date range)';
+  }
+
+  /* =========================================================
+     ANIMATION LOOP
+     ========================================================= */
+  var last = 0;
+  var rafId = null;    /* id of the pending frame; null when the loop is idle */
+  var needsRender = false;
+
+  function frame(now) {
+    rafId = null;
+    var dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+    last = now;
+
+    if (state.playing) {
+      var scaled = dt * state.speed;
+      simTime += scaled;
+      var deltaDays = scaled * DAYS_PER_SECOND;
+      simDays += deltaDays;
+      for (var i = 0; i < bodies.length; i++) {
+        var b = bodies[i];
+        var period = EARTH_PERIOD_DAYS * Math.pow(b.p.periodDays / EARTH_PERIOD_DAYS, SPEED_EXPONENT);
+        b.angle += (TAU / period) * deltaDays;
+        if (b.angle > TAU) b.angle -= TAU;
+        b.spin = norm01((simTime / b.spinPeriod) * (b.p.retrograde ? -1 : 1));
+      }
+      clockAcc += dt;
+      if (clockAcc > 0.1) { clockAcc = 0; updateClocks(); }
+      needsRender = true;
+    }
+
+    for (var j = 0; j < bodies.length; j++) {
+      var bb = bodies[j];
+      bb.px = cx + Math.cos(bb.angle) * bb.orbitR;
+      bb.py = cy + Math.sin(bb.angle) * bb.orbitR;
+    }
+
+    if (state.playing || needsRender) {
+      needsRender = false;
+      render();
+    }
+
+    if (state.playing) {
+      rafId = requestAnimationFrame(frame);
+    } else {
+      /* Paused: go idle. Reset the clock so resuming never adds a time jump. */
+      last = 0;
+    }
+  }
+
+  /* Redraw one frame without keeping the loop alive — safe while paused. */
+  function invalidate() {
+    needsRender = true;
+    if (rafId == null) {
+      last = 0;
+      rafId = requestAnimationFrame(frame);
+    }
+  }
+
+  /* =========================================================
+     THEME
+     ========================================================= */
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    var btn = $('themeBtn');
+    btn.setAttribute('aria-pressed', String(t === 'light'));
+    btn.textContent = t === 'light' ? '☾ Theme: Light' : '◐ Theme: Dark';
+    try { localStorage.setItem('smc-theme', t); } catch (err) { /* storage unavailable */ }
+  }
+
+  /* =========================================================
+     BUILD STATIC UI
+     ========================================================= */
+  function buildLegend() {
+    var html = '<span class="legend-item"><span class="legend-swatch" style="background:#ffd257"></span>SUN</span>';
+    for (var i = 0; i < PLANETS.length; i++) {
+      var p = PLANETS[i];
+      html += '<span class="legend-item"><span class="legend-swatch" style="background:' + p.swatch +
+        '"></span>' + (i + 1) + ' ' + p.name.toUpperCase() + '</span>';
+    }
+    $('legend').innerHTML = html;
+  }
+
+  function buildSelects() {
+    var main = '';
+    for (var i = 0; i < PLANETS.length; i++) {
+      main += '<option value="' + PLANETS[i].id + '">' + PLANETS[i].name + ' — ' + PLANETS[i].cls + '</option>';
+    }
+    /* The Sun joins the selector so its data panel is reachable without a mouse. */
+    main += '<option value="sun">Sun — G-type main-sequence star (G2V)</option>';
+    $('planetSelect').innerHTML = main;
+    $('planetSelect').value = 'earth';
+
+    var cmp = '';
+    for (var j = 0; j < PLANETS.length; j++) {
+      cmp += '<option value="' + PLANETS[j].id + '">' + PLANETS[j].name + ' (' + PLANETS[j].cls + ')</option>';
+    }
+    $('cmpA').innerHTML = cmp;
+    $('cmpB').innerHTML = cmp;
+    $('cmpA').value = 'earth';
+    $('cmpB').value = 'jupiter';
+  }
+
+  /* =========================================================
+     EVENT WIRING
+     ========================================================= */
+  function wire() {
+    $('btnPlay').addEventListener('click', function () { setPlaying(!state.playing); });
+    $('heroPlayBtn').addEventListener('click', function () { setPlaying(!state.playing); });
+
+    $('speedRange').addEventListener('input', function (e) {
+      state.speed = Math.max(0.1, Number(e.target.value) / 10);
+      $('speedOut').textContent = state.speed.toFixed(1) + '×';
+      $('speedBadge').textContent = state.speed.toFixed(1) + '×';
+    });
+
+    $('orbitToggle').addEventListener('change', function (e) {
+      state.showOrbits = e.target.checked;
+      invalidate();
+      announce(state.showOrbits ? 'Orbital paths shown.' : 'Orbital paths hidden.');
+    });
+
+    $('btnView').addEventListener('click', function () {
+      setView(state.view === 'standard' ? 'educational' : 'standard');
+    });
+
+    $('planetSelect').addEventListener('change', function (e) { selectBody(e.target.value); });
+    $('btnReset').addEventListener('click', resetAll);
+
+    $('searchInput').addEventListener('input', function (e) {
+      state.search = e.target.value;
+      renderSearch();
+      var q = state.search.trim();
+      if (q) {
+        var n = parseInt($('searchCount').textContent, 10) || 0;
+        announce(n + (n === 1 ? ' planet matches ' : ' planets match ') + q + '.');
+      }
+    });
+
+    resultsEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-id]');
+      if (btn) selectBody(btn.getAttribute('data-id'));
+    });
+
+    $('cmpA').addEventListener('change', renderCompare);
+    $('cmpB').addEventListener('change', renderCompare);
+
+    $('themeBtn').addEventListener('click', function () {
+      setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    });
+
+    $('navToggle').addEventListener('click', function () {
+      var nav = $('primaryNav');
+      var open = nav.classList.toggle('is-open');
+      $('navToggle').setAttribute('aria-expanded', String(open));
+    });
+
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { layout(); }).observe(canvas.parentNode);
+    }
+    window.addEventListener('resize', layout);
+  }
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+  function init() {
+    var saved = null;
+    try { saved = localStorage.getItem('smc-theme'); } catch (err) { saved = null; }
+    setTheme(saved === 'light' ? 'light' : 'dark');
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      state.playing = false;
+    }
+
+    buildLegend();
+    buildSelects();
+    wire();
+    layout();
+    renderAll();
+    updateClocks();
+    invalidate();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
